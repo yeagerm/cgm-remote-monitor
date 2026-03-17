@@ -248,6 +248,21 @@ describe('API3 SEARCH', function() {
     });
 
 
+    it('should respect string API3_MAX_LIMIT defaults', async () => {
+      // This test requires at least 5 documents
+      const apiApp = self.instance.ctx.apiApp
+        , limitBackup = apiApp.get('API3_MAX_LIMIT');
+      apiApp.set('API3_MAX_LIMIT', '5');
+      let res = await self.instance.get(endpoint, self.jwt[jwtToUse])
+        .expect(200);
+
+      res.body.status.should.equal(200);
+      res.body.result.length.should.equal(5);
+      containsMembers(res.body.result, testDocs, commonProperties);
+      apiApp.set('API3_MAX_LIMIT', limitBackup);
+    });
+
+
     it('should skip documents', async () => {
       // This test requires at least 8 documents
       let res = await self.instance.get(`${endpoint}?sort=date&limit=8`, self.jwt[jwtToUse])
