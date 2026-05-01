@@ -37,7 +37,7 @@ describe('simplealarms', function ( ) {
     highest.level.should.equal(ctx.levels.WARN);
 
     var expectedMessage =
-      ctx.settings.units === 'mmol' ?
+      sbx.settings.units === 'mmol' ?
         'BG Now: 10.1 +0.6 mmol/L' :
         'BG Now: 182 +11 mg/dl';
     highest.message.should.equal(expectedMessage);

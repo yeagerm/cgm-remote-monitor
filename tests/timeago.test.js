@@ -55,7 +55,7 @@ describe('timeago', function() {
     highest.level.should.equal(ctx.levels.WARN);
 
     var expectedMessage =
-      ctx.settings.units === 'mmol' ?
+      sbx.settings.units === 'mmol' ?
         'Last received: 16 mins ago\nBG Now: 5.6 mmol/L' :
         'Last received: 16 mins ago\nBG Now: 100 mg/dl';
     highest.message.should.equal(expectedMessage);
@@ -73,7 +73,7 @@ describe('timeago', function() {
     highest.level.should.equal(ctx.levels.URGENT);
 
     var expectedMessage =
-      ctx.settings.units === 'mmol' ?
+      sbx.settings.units === 'mmol' ?
         'Last received: 31 mins ago\nBG Now: 5.6 mmol/L' :
         'Last received: 31 mins ago\nBG Now: 100 mg/dl';
     highest.message.should.equal(expectedMessage);

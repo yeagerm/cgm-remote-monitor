@@ -251,7 +251,7 @@ describe('boluswizardpreview', function ( ) {
 
     var expectedMessage =
       ctx.settings.units === 'mmol' ?
-        'BG Now: 10 +0.3 ↗ mmol/L\nBG 15m: 10.4 mmol/L\nBWP: 0.65U' :
+        'BG Now: 10 +0.3 ↗ mmol/L\nBG 15m: 10.4 mmol/L\nBWP: 0.66U' :
         'BG Now: 180 +5 ↗ mg/dl\nBG 15m: 187 mg/dl\nBWP: 0.66U';
     highest.message.should.equal(expectedMessage);
 
