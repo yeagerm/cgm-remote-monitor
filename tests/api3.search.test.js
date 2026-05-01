@@ -64,6 +64,28 @@ function containsMembers(requiredMembers, arrayToCheck, propertiesToCompare) {
 }
 
 
+describe('API3 SEARCH INPUT', function() {
+  const input = require('../lib/api3/generic/search/input');
+
+  it('should ignore non-scalar filter_parameters values without string coercion', function() {
+    const maliciousValue = {
+      length: 1e100
+      , toString: function toString () {
+        throw new Error('filter_parameters object should not be coerced');
+      }
+    };
+
+    const filter = input.parseFilter({
+      query: {
+        filter_parameters: maliciousValue
+      }
+    }, {});
+
+    filter.should.eql([]);
+  });
+});
+
+
 describe('API3 SEARCH', function() {
   const self = this
     , testConst = require('./fixtures/api3/const.json')
