@@ -630,6 +630,39 @@ describe('Profile', function ( ) {
     t.toISOString().should.equal('2026-01-14T18:30:00.000Z');
   });
 
+  it('parseInTimezone should preserve fixed-offset report day boundaries', function () {
+    var indiaData = {
+      'timezone': 'GMT+5:30'
+      , 'dia': 3
+      , 'carbs_hr': 30
+      , 'carbratio': 7
+      , 'sens': 35
+      , 'target_low': 95
+      , 'target_high': 120
+    };
+    var indiaProfile = require('../lib/profilefunctions')([indiaData], helper.ctx);
+    var from = indiaProfile.parseInTimezone('2026-01-15');
+    var to = indiaProfile.parseInTimezone('2026-01-15').endOf('day');
+    from.toISOString().should.equal('2026-01-14T18:30:00.000Z');
+    to.toISOString().should.equal('2026-01-15T18:29:59.999Z');
+  });
+
+  it('applyTimezone should group UTC treatments onto the fixed-offset report day', function () {
+    var indiaData = {
+      'timezone': 'GMT+5:30'
+      , 'dia': 3
+      , 'carbs_hr': 30
+      , 'carbratio': 7
+      , 'sens': 35
+      , 'target_low': 95
+      , 'target_high': 120
+    };
+    var indiaProfile = require('../lib/profilefunctions')([indiaData], helper.ctx);
+    var moment = helper.ctx.moment;
+    var treatmentTime = indiaProfile.applyTimezone(moment.utc('2026-01-14T19:00:00.000Z'));
+    treatmentTime.format('YYYY-MM-DD').should.equal('2026-01-15');
+  });
+
   it('should leave invalid sub-hour minutes (>=60) unchanged for UTC fallback', function () {
     var invalidData = {
       'timezone': 'GMT+5:60'
