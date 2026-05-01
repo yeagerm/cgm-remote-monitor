@@ -2,7 +2,7 @@
 
 require('should');
 var benv = require('benv');
-const moment = require("moment/moment");
+var moment = require('moment');
 
 var nowData = {
   sgvs: [
@@ -99,17 +99,65 @@ describe('careportal', function ( ) {
 
   });
 
-  it('uses local timezone date, not UTC (8304) ', async () =>{
-    const client = window.Nightscout.client;
+  it('uses local timezone date, not UTC, when saving an other-time treatment (8304)', function () {
+    var client = window.Nightscout.client;
     client.init();
-    // sleep(50);
 
-    const fakeNow = moment.parseZone('2024-10-25T23:00:00-05:00');
-    client.ctx.moment = () => (fakeNow);
+    var fakeNow = moment.parseZone('2024-10-25T23:00:00-05:00');
+    client.ctx.moment = function mockMoment () {
+      return fakeNow.clone();
+    };
 
     client.careportal.prepare();
 
     $('#eventDateValue').val().should.equal('2024-10-25');
+    $('#eventTimeValue').val().should.equal('23:00');
+
+    $('#eventType').val('BG Check');
+    $('#glucoseValue').val('100');
+    $('#nowtime').removeAttr('checked').prop('checked', false);
+    $('#othertime').attr('checked', 'checked').prop('checked', true);
+    client.careportal.eventTimeTypeChange();
+
+    var originalAjax = $.ajax;
+    var originalConfirm = window.confirm;
+    var originalAlert = window.alert;
+    var postedTreatment;
+
+    $.ajax = function mockAjax (request) {
+      postedTreatment = request.data;
+
+      return {
+        done: function mockDone (fn) {
+          fn({message: 'OK'});
+          return this;
+        }
+        , fail: function mockFail () {
+          return this;
+        }
+      };
+    };
+
+    window.confirm = function mockConfirm () {
+      return true;
+    };
+    window.alert = function mockAlert (messages) {
+      messages.should.equal('');
+    };
+
+    try {
+      client.careportal.save();
+    } finally {
+      $.ajax = originalAjax;
+      window.confirm = originalConfirm;
+      window.alert = originalAlert;
+    }
+
+    var expectedCreatedAt = client.utils.mergeInputTime('23:00', '2024-10-25').toDate().toISOString();
+
+    postedTreatment.eventType.should.equal('BG Check');
+    postedTreatment.created_at.should.equal(expectedCreatedAt);
+    postedTreatment.created_at.should.not.equal(client.utils.mergeInputTime('23:00', '2024-10-26').toDate().toISOString());
   });
 
 });
