@@ -77,12 +77,14 @@ describe('API3 SEARCH', function() {
   /**
    * Create given document in a promise
    */
-  self.createDocument = (doc, url) => new Promise((resolve) => {
+  self.createDocument = (doc, url) => new Promise((resolve, reject) => {
     doc.identifier = opTools.calculateIdentifier(doc);
     self.instance.post(url, self.jwt.all)
       .send(doc)
       .end((err, res) => {
-        should.not.exist(err);
+        if (err) {
+          return reject(err);
+        }
         resolve(res);
       });
   });
@@ -91,11 +93,13 @@ describe('API3 SEARCH', function() {
   /**
    * Get document detail for futher processing
    */
-  self.deleteDocument = (identifier, url) => new Promise((resolve) => {
+  self.deleteDocument = (identifier, url) => new Promise((resolve, reject) => {
     self.instance.delete(`${url}/${identifier}`, self.jwt.read)
       .expect(200)
       .end((err) => {
-        should.not.exist(err);
+        if (err) {
+          return reject(err);
+        }
         resolve();
       });
   });

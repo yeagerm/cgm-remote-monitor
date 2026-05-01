@@ -195,12 +195,16 @@ describe('API3 READ', function () {
 
     await new Promise((resolve, reject) => {
       self.instance.ctx.devicestatus.create([doc], (err) => { // let's insert the document in APIv1's way
-
-        should.not.exist(err);
-        doc._id = doc._id.toString();
-        self.cache.nextShouldEql(self.col, doc);
-
-        err ? reject(err) : resolve(doc);
+        if (err) {
+          return reject(err);
+        }
+        try {
+          doc._id = doc._id.toString();
+          self.cache.nextShouldEql(self.col, doc);
+          resolve(doc);
+        } catch (e) {
+          reject(e);
+        }
       });
     });
 
@@ -221,4 +225,3 @@ describe('API3 READ', function () {
   });
 })
 ;
-
