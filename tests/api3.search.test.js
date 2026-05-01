@@ -249,6 +249,22 @@ describe('API3 SEARCH', function() {
     });
 
 
+    it('should accept repeated filter_parameters query arguments', async () => {
+      const sortedDocs = testDocs.slice().sort((a, b) => a.date - b.date);
+      const lowerDate = sortedDocs[2].date;
+      const upperDate = sortedDocs[7].date;
+      const lowerFilter = encodeURIComponent(`date$gt=${lowerDate}`);
+      const upperFilter = encodeURIComponent(`date$lt=${upperDate}`);
+      const expectedDocs = testDocs.filter(doc => doc.date > lowerDate && doc.date < upperDate);
+      let res = await self.instance.get(`${endpoint}?filter_parameters=${lowerFilter}&filter_parameters=${upperFilter}`, self.jwt[jwtToUse])
+        .expect(200);
+
+      res.body.status.should.equal(200);
+      res.body.result.length.should.equal(expectedDocs.length);
+      containsMembers(expectedDocs, res.body.result, commonProperties);
+    });
+
+
     it('should reject both sort and sort$desc', async () => {
       let res = await self.instance.get(`${endpoint}?sort=date&sort$desc=created_at`, self.jwt[jwtToUse])
         .expect(400);
