@@ -173,6 +173,98 @@ describe('API3 SEARCH', function() {
     });
 
 
+    it('should filter by a single parameter', async () => {
+      const expectedDocs = testDocs.filter(doc => doc.date === testDocs[4].date);
+      let res = await self.instance.get(`${endpoint}?date$eq=${testDocs[4].date}`, self.jwt[jwtToUse])
+        .expect(200);
+
+      res.body.status.should.equal(200);
+      res.body.result.length.should.equal(expectedDocs.length);
+      containsMembers(expectedDocs, res.body.result, commonProperties);
+    });
+
+
+    it('should filter by ISO8601 date', async () => {
+      const isoDate = encodeURIComponent(new Date(testDocs[3].date).toISOString());
+      const expectedDocs = testDocs.filter(doc => doc.date === testDocs[3].date);
+      let res = await self.instance.get(`${endpoint}?date$eq=${isoDate}`, self.jwt[jwtToUse])
+        .expect(200);
+
+      res.body.status.should.equal(200);
+      res.body.result.length.should.equal(expectedDocs.length);
+      containsMembers(expectedDocs, res.body.result, commonProperties);
+    });
+
+
+    it('should filter by ISO8601 date with timezone', async () => {
+      const timezoneDate = new Date(testDocs[3].date + (6 * 60 * 60 * 1000)).toISOString().replace('Z', '+06:00');
+      const expectedDocs = testDocs.filter(doc => doc.date === testDocs[3].date);
+      let res = await self.instance.get(`${endpoint}?date$eq=${encodeURIComponent(timezoneDate)}`, self.jwt[jwtToUse])
+        .expect(200);
+
+      res.body.status.should.equal(200);
+      res.body.result.length.should.equal(expectedDocs.length);
+      containsMembers(expectedDocs, res.body.result, commonProperties);
+    });
+
+
+    it('should filter by multiple operators on the same field', async () => {
+      const sortedDocs = testDocs.slice().sort((a, b) => a.date - b.date);
+      const lowerDate = sortedDocs[2].date;
+      const upperDate = sortedDocs[7].date;
+      const expectedDocs = testDocs.filter(doc => doc.date > lowerDate && doc.date < upperDate);
+      let res = await self.instance.get(`${endpoint}?date$gt=${lowerDate}&date$lt=${upperDate}`, self.jwt[jwtToUse])
+        .expect(200);
+
+      res.body.status.should.equal(200);
+      res.body.result.length.should.equal(expectedDocs.length);
+      containsMembers(expectedDocs, res.body.result, commonProperties);
+    });
+
+
+    it('should accept a filter_parameters query argument', async () => {
+      const filterParameters = encodeURIComponent(`date$eq=${testDocs[4].date}`);
+      const expectedDocs = testDocs.filter(doc => doc.date === testDocs[4].date);
+      let res = await self.instance.get(`${endpoint}?filter_parameters=${filterParameters}`, self.jwt[jwtToUse])
+        .expect(200);
+
+      res.body.status.should.equal(200);
+      res.body.result.length.should.equal(expectedDocs.length);
+      containsMembers(expectedDocs, res.body.result, commonProperties);
+    });
+
+
+    it('should accept multiple filter_parameters values', async () => {
+      const sortedDocs = testDocs.slice().sort((a, b) => a.date - b.date);
+      const lowerDate = sortedDocs[2].date;
+      const upperDate = sortedDocs[7].date;
+      const filterParameters = encodeURIComponent(`date$gt=${lowerDate} date$lt=${upperDate}`);
+      const expectedDocs = testDocs.filter(doc => doc.date > lowerDate && doc.date < upperDate);
+      let res = await self.instance.get(`${endpoint}?filter_parameters=${filterParameters}`, self.jwt[jwtToUse])
+        .expect(200);
+
+      res.body.status.should.equal(200);
+      res.body.result.length.should.equal(expectedDocs.length);
+      containsMembers(expectedDocs, res.body.result, commonProperties);
+    });
+
+
+    it('should accept repeated filter_parameters query arguments', async () => {
+      const sortedDocs = testDocs.slice().sort((a, b) => a.date - b.date);
+      const lowerDate = sortedDocs[2].date;
+      const upperDate = sortedDocs[7].date;
+      const lowerFilter = encodeURIComponent(`date$gt=${lowerDate}`);
+      const upperFilter = encodeURIComponent(`date$lt=${upperDate}`);
+      const expectedDocs = testDocs.filter(doc => doc.date > lowerDate && doc.date < upperDate);
+      let res = await self.instance.get(`${endpoint}?filter_parameters=${lowerFilter}&filter_parameters=${upperFilter}`, self.jwt[jwtToUse])
+        .expect(200);
+
+      res.body.status.should.equal(200);
+      res.body.result.length.should.equal(expectedDocs.length);
+      containsMembers(expectedDocs, res.body.result, commonProperties);
+    });
+
+
     it('should reject both sort and sort$desc', async () => {
       let res = await self.instance.get(`${endpoint}?sort=date&sort$desc=created_at`, self.jwt[jwtToUse])
         .expect(400);
