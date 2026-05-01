@@ -22,7 +22,7 @@ function createRole (authStorage, name, permissions) {
       }, function afterCreate (err) {
 
         if (err)
-          reject(err);
+          return reject(err);
 
         role = _.find(authStorage.roles, { name });
         resolve(role);
@@ -50,7 +50,7 @@ function createTestSubject (authStorage, subjectName, roles) {
       }, function afterCreate (err) {
 
         if (err)
-          reject(err);
+          return reject(err);
 
         subject = _.find(authStorage.subjects, { name: subjectDbName });
         resolve(subject);
@@ -75,7 +75,7 @@ async function initJwts (accessToken, tokensNeeded, app) {
           .expect(200)
           .end(function(err, res) {
             if (err)
-              reject(err);
+              return reject(err);
 
             resolve(res.body.token);
           });
