@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 
 require('should');
 
@@ -50,6 +51,29 @@ describe('language', function ( ) {
   it('labels zh_tw as Taiwan Traditional Chinese', function () {
     var language = require('../lib/language')();
     language.get('zh_tw').language.should.equal('繁體中文（台灣）');
+  });
+
+  it('fallback to English filename for unsupported language codes', function () {
+    var language = require('../lib/language')();
+    language.getFilename('unknown_language').should.equal('en/en.json');
+  });
+
+  it('parse every translation file as valid JSON', function () {
+    function parseTranslationTree (dirPath) {
+      fs.readdirSync(dirPath, { withFileTypes: true }).forEach(function(entry) {
+        var entryPath = path.join(dirPath, entry.name);
+        if (entry.isDirectory()) {
+          parseTranslationTree(entryPath);
+          return;
+        }
+
+        if (path.extname(entry.name) === '.json') {
+          JSON.parse(fs.readFileSync(entryPath, 'utf8'));
+        }
+      });
+    }
+
+    parseTranslationTree(path.join(__dirname, '..', 'translations'));
   });
 
 });
