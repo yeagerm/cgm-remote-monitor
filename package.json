@@ -126,6 +126,7 @@
     "jquery.tooltips": "^1.0.0",
     "js-storage": "^1.1.0",
     "jsdom": "=11.11.0",
+    "jsdom-purify": "npm:jsdom@22.1.0",
     "jsonwebtoken": "^9.0.0",
     "lodash": "^4.17.20",
     "memory-cache": "^0.2.0",
@@ -144,7 +145,6 @@
     "process": "^0.11.10",
     "pushover-notifications": "^1.2.2",
     "random-token": "0.0.8",
-    "request": "^2.88.2",
     "semver": "^6.3.0",
     "share2nightscout-bridge": "^0.2.12",
     "shiro-trie": "^0.4.9",
@@ -179,5 +179,13 @@
     "webpack-dev-middleware": "^4.3.0",
     "webpack-hot-middleware": "^2.25.2",
     "xml2js": "^0.4.23"
+  },
+  "overrides": {
+    "minimed-connect-to-nightscout": {
+      "tough-cookie": "4.1.4"
+    },
+    "mongodb": {
+      "mongodb-connection-string-url": "3.0.2"
+    }
   }
 }
