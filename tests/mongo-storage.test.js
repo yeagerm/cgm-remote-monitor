@@ -66,6 +66,30 @@ describe('mongo storage', function () {
     });
   });
 
+  it('ensureIndexes accepts compound index definitions', function (done) {
+    var store = require('../lib/storage/mongo-storage');
+    var calls = [];
+    var profileLatestIndex = { startDate: -1, _id: -1 };
+
+    store(env, function (err, db) {
+      should.not.exist(err);
+
+      db.ensureIndexes({
+        collectionName: 'profile',
+        createIndex: function (field, options) {
+          calls.push({ field: field, options: options });
+          return Promise.resolve();
+        }
+      }, [profileLatestIndex]);
+
+      calls.length.should.equal(1);
+      calls[0].field.should.eql(profileLatestIndex);
+      should.not.exist(calls[0].options);
+
+      done();
+    });
+  });
+
   it('When no connection-string is given the storage-class should throw an error.', function (done) {
     delete env.storageURI;
     should.not.exist(env.storageURI);
