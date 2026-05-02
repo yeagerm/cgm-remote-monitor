@@ -61,6 +61,9 @@ var someData = {
   '/api/v1/entries/?find[date][$lte]=': {
     deletedCount: 1
   },
+  '/api/v1/profile/?keep=': {
+    deletedCount: 2
+  },
 };
 
 
@@ -134,6 +137,8 @@ describe('admintools', function ( ) {
             url = '/api/v1/treatments/?find[created_at][$lte]=';
           } else if (url.indexOf('/api/v1/entries/?find[date][$lte]=')===0) {
             url = '/api/v1/entries/?find[date][$lte]=';
+          } else if (url.indexOf('/api/v1/profile/?keep=')===0) {
+            url = '/api/v1/profile/?keep=';
           }
           return {
             done: function mockDone (fn) {
@@ -281,6 +286,12 @@ describe('admintools', function ( ) {
 
     $('#admin_cleanentriesdb_0_html + button').click();
     $('#admin_cleanentriesdb_0_status').text().should.equal('1 records deleted'); // entries code result
+
+    $('#admin_cleanprofiledb_0_html + button').text().should.equal('Delete old profile records'); // profile button
+    $('#admin_cleanprofiledb_0_status').text().should.equal(''); // profile init result
+
+    $('#admin_cleanprofiledb_0_html + button').click();
+    $('#admin_cleanprofiledb_0_status').text().should.equal('2 records deleted'); // profile code result
 
     done();
   });
