@@ -4,9 +4,7 @@ Nightscout Web Monitor (a.k.a. cgm-remote-monitor)
 ![nightscout horizontal](https://cloud.githubusercontent.com/assets/751143/8425633/93c94dc0-1ebc-11e5-99e7-71a8f464caac.png)
 
 [![Build Status][build-img]][build-url]
-[![Dependency Status][dependency-img]][dependency-url]
 [![Coverage Status][coverage-img]][coverage-url]
-[![Codacy Badge][codacy-img]][codacy-url]
 [![Discord chat][discord-img]][discord-url]
 
 This acts as a web-based CGM (Continuous Glucose Monitor) to allow
@@ -34,16 +32,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## [#WeAreNotWaiting](https://twitter.com/hashtag/wearenotwaiting?src=hash&vertical=default&f=images) and [this](https://vimeo.com/109767890) is why.
 
-[![Coverage Status](https://coveralls.io/repos/github/nightscout/cgm-remote-monitor/badge.svg?branch=master)](https://coveralls.io/github/nightscout/cgm-remote-monitor?branch=master)
-
-[build-img]: https://img.shields.io/travis/nightscout/cgm-remote-monitor.svg
-[build-url]: https://travis-ci.org/nightscout/cgm-remote-monitor
-[dependency-img]: https://img.shields.io/david/nightscout/cgm-remote-monitor.svg
-[dependency-url]: https://david-dm.org/nightscout/cgm-remote-monitor
+[build-img]: https://img.shields.io/github/actions/workflow/status/nightscout/cgm-remote-monitor/main.yml
+[build-url]: https://github.com/nightscout/cgm-remote-monitor/actions/workflows/main.yml
 [coverage-img]: https://img.shields.io/coveralls/nightscout/cgm-remote-monitor/dev.svg
-[coverage-url]: https://coveralls.io/github/nightscout/cgm-remote-monitor?branch=master
-[codacy-img]: https://www.codacy.com/project/badge/f79327216860472dad9afda07de39d3b
-[codacy-url]: https://www.codacy.com/app/Nightscout/cgm-remote-monitor
+[coverage-url]: https://coveralls.io/github/nightscout/cgm-remote-monitor?branch=dev
 [discord-img]: https://img.shields.io/discord/629952586895851530?label=discord%20chat
 [discord-url]: https://discord.gg/rTKhrqz
 [heroku-img]: https://www.herokucdn.com/deploy/button.png
