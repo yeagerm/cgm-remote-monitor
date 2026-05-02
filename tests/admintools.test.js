@@ -30,7 +30,7 @@ var someData = {
     }
   ],
   '/api/v1/devicestatus/?find[created_at][$lte]=': {
-    n: 1
+    deletedCount: 1
   },
   '/api/v1/treatments.json?&find[created_at][$gte]=': [
       {
@@ -42,7 +42,7 @@ var someData = {
       }
     ],
   '/api/v1/treatments/?find[created_at][$lte]=': {
-    n: 1
+    deletedCount: 1
   },
   '/api/v1/entries.json?&find[date][$gte]=': [
       {
@@ -59,9 +59,28 @@ var someData = {
       }
     ],
   '/api/v1/entries/?find[date][$lte]=': {
-    n: 1
+    deletedCount: 1
   },
 };
+
+
+describe('delete status compatibility', function () {
+  var normalizeDeleteStatus = require('../lib/api/shared/delete-status');
+
+  it('should preserve legacy n count for MongoDB deletedCount results', function () {
+    normalizeDeleteStatus({deletedCount: 1}).should.eql({
+      deletedCount: 1
+      , n: 1
+    });
+  });
+
+  it('should preserve deletedCount for legacy n results', function () {
+    normalizeDeleteStatus({n: 1}).should.eql({
+      n: 1
+      , deletedCount: 1
+    });
+  });
+});
 
 
 describe('admintools', function ( ) {
@@ -70,8 +89,8 @@ describe('admintools', function ( ) {
   before(function (done) {
     benv.setup(function() {
 
-	  benv.require(__dirname + '/../node_modules/.cache/_ns_cache/public/js/bundle.app.js');
-          
+      benv.require(__dirname + '/../node_modules/.cache/_ns_cache/public/js/bundle.app.js');
+
       self.$ = $;
       
       self.localCookieStorage = self.localStorage = self.$.localStorage = require('./fixtures/localstorage');
@@ -157,8 +176,6 @@ describe('admintools', function ( ) {
       let timer = d3.timer(function mockTimer() { });
       timer.stop();
       
-      var cookieStorageType = self.localStorage._type
-
       benv.expose({
         $: self.$
         , jQuery: self.$
@@ -166,7 +183,7 @@ describe('admintools', function ( ) {
         , serverSettings: serverSettings
         , localCookieStorage: self.localStorage
         , cookieStorageType: self.localStorage
-		, localStorage: self.localStorage
+        , localStorage: self.localStorage
         , io: {
           connect: function mockConnect ( ) {
             return {
