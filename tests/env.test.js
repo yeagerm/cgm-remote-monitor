@@ -1,6 +1,7 @@
 'use strict';
 
-require('should');
+var should = require('should');
+var os = require('os');
 
 describe('env', function () {
   it( 'show the right plugins', function () {
@@ -67,6 +68,77 @@ describe('env', function () {
     env = require( '../lib/server/env' )();
     env.insecureUseHttp.should.be.false(); // not defined should be false
     env.secureHstsHeader.should.be.true();
+  });
+
+  describe('HOSTNAME', function () {
+    var originalHostname;
+    var originalNightscoutHostname;
+    var originalContainer;
+
+    beforeEach(function () {
+      originalHostname = process.env.HOSTNAME;
+      originalNightscoutHostname = process.env.NIGHTSCOUT_HOSTNAME;
+      originalContainer = process.env.container;
+
+      delete process.env.HOSTNAME;
+      delete process.env.NIGHTSCOUT_HOSTNAME;
+      delete process.env.container;
+    });
+
+    afterEach(function () {
+      if (originalHostname === undefined) {
+        delete process.env.HOSTNAME;
+      } else {
+        process.env.HOSTNAME = originalHostname;
+      }
+
+      if (originalNightscoutHostname === undefined) {
+        delete process.env.NIGHTSCOUT_HOSTNAME;
+      } else {
+        process.env.NIGHTSCOUT_HOSTNAME = originalNightscoutHostname;
+      }
+
+      if (originalContainer === undefined) {
+        delete process.env.container;
+      } else {
+        process.env.container = originalContainer;
+      }
+    });
+
+    it('prefers NIGHTSCOUT_HOSTNAME over legacy HOSTNAME', function () {
+      process.env.NIGHTSCOUT_HOSTNAME = '0.0.0.0';
+      process.env.HOSTNAME = 'legacy-hostname';
+
+      var env = require('../lib/server/env')();
+
+      env.HOSTNAME.should.equal('0.0.0.0');
+    });
+
+    it('treats empty NIGHTSCOUT_HOSTNAME as all interfaces', function () {
+      process.env.NIGHTSCOUT_HOSTNAME = '';
+      process.env.HOSTNAME = 'legacy-hostname';
+
+      var env = require('../lib/server/env')();
+
+      should(env.HOSTNAME).equal(null);
+    });
+
+    it('keeps legacy HOSTNAME when explicitly configured outside Docker', function () {
+      process.env.HOSTNAME = '127.0.0.1';
+
+      var env = require('../lib/server/env')();
+
+      env.HOSTNAME.should.equal('127.0.0.1');
+    });
+
+    it('ignores Docker generated HOSTNAME', function () {
+      process.env.container = 'docker';
+      process.env.HOSTNAME = os.hostname();
+
+      var env = require('../lib/server/env')();
+
+      should(env.HOSTNAME).equal(null);
+    });
   });
 
   describe( 'DISPLAY_UNITS', function () {

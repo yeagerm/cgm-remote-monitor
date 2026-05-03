@@ -37,6 +37,8 @@ services:
       # The `nightscout` service can use HTTP, because we use `traefik` to serve the HTTPS
       # and manage TLS certificates
       INSECURE_USE_HTTP: 'true'
+      # Listen on all container interfaces so reverse proxies and other containers can reach Nightscout
+      NIGHTSCOUT_HOSTNAME: '0.0.0.0'
 
       # For all other settings, please refer to the Environment section of the README
       ### Required variables

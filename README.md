@@ -285,7 +285,7 @@ autonomy for your data:
   * `MONGO_MIN_POOL_SIZE` (`0`) - Minimum pool connections to keep open.
   * `MONGO_MAX_IDLE_TIME_MS` (`30000`) - Max idle time (ms) before closing a connection.
   * `PORT` (`1337`) - The port that the node.js application will listen on.
-  * `HOSTNAME` - The hostname that the node.js application will listen on, null by default for any hostname for IPv6 you may need to use `::`.
+  * `NIGHTSCOUT_HOSTNAME` - The hostname or address that the node.js application will listen on. Leave unset to listen on all interfaces. Docker users can set this to `0.0.0.0` when Nightscout is reached through another container or reverse proxy. The older `HOSTNAME` setting is still accepted for compatibility, but should not be used for new installs because container platforms often set it automatically.
   * `SSL_KEY` - Path to your ssl key file, so that ssl(https) can be enabled directly in node.js. If using Let's Encrypt, make this variable the path to your privkey.pem file (private key).
   * `SSL_CERT` - Path to your ssl cert file, so that ssl(https) can be enabled directly in node.js. If using Let's Encrypt, make this variable the path to fullchain.pem file (cert + ca).
   * `SSL_CA` - Path to your ssl ca file, so that ssl(https) can be enabled directly in node.js. If using Let's Encrypt, make this variable the path to chain.pem file (chain).
