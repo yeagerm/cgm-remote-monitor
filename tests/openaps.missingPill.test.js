@@ -11,7 +11,7 @@ const missingRateOnLastEnacted = require('./data/missingRateOnLastEnacted.json')
 const workingStatus = require('./data/statusWithWorkingForecast.json');
 
 describe('OpenAPS Visualization Tests', function () {
-    let ctx, now;
+    let ctx, now, pillOptions;
 
     beforeEach(function () {
         let top_ctx = helper.getctx();
@@ -28,6 +28,7 @@ describe('OpenAPS Visualization Tests', function () {
             },
             pluginBase: {
                 updatePillText: function mockedUpdatePillText(plugin, options) {
+                    pillOptions = options;
                     options.label.should.equal('OpenAPS ⌁');
                 }
                 , addForecastPoints: function mockAddForecastPoints (points) {
@@ -58,6 +59,12 @@ describe('OpenAPS Visualization Tests', function () {
         const result = sbx.properties.openaps;
         should.exist(result.lastPredBGs);
         result.lastPredBGs.UAM.should.be.an.Array();
+        should.exist(pillOptions);
+        const pillText = pillOptions.info.map(function getValue (item) {
+            return item.value;
+        }).join(' ');
+        pillText.should.not.containEql('undefined');
+        pillText.should.not.containEql('Temp Basal Started');
         done();
     });
 });
