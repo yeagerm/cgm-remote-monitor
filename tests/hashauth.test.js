@@ -221,6 +221,44 @@ describe('hashauth', function ( ) {
     });
   });
 
+  it ('should hash without browser subtle crypto', function (done) {
+    var client = require('../lib/client');
+    var hashauth = require('../lib/client/hashauth');
+    var localStorage = require('./fixtures/localstorage');
+    var originalTextEncoder = global.TextEncoder;
+    var originalWindowTextEncoder = window.TextEncoder;
+
+    function restoreGlobals () {
+      global.TextEncoder = originalTextEncoder;
+      window.TextEncoder = originalWindowTextEncoder;
+    }
+
+    localStorage.remove('apisecrethash');
+    window.crypto.subtle = null;
+    global.TextEncoder = undefined;
+    window.TextEncoder = undefined;
+
+    hashauth.init(client,$);
+    hashauth.verifyAuthentication = function mockVerifyAuthentication(next) {
+      hashauth.authenticated = true;
+      next(true);
+    };
+
+    client.init();
+
+    hashauth.processSecret('this is my long pass phrase', false, function(success) {
+      restoreGlobals();
+      if (!success) {
+        return done(new Error('processSecret failed without subtle crypto'));
+      }
+      hashauth.hash().should.equal('b723e97aa97846eb92d5264f084b2823f57c4aa1');
+      var testnull = (localStorage.get('apisecrethash')===null);
+      testnull.should.equal(true);
+      hashauth.isAuthenticated().should.equal(true);
+      done();
+    });
+  });
+
   it ('should report secret too short', function () {
     var client = require('../lib/client');
     var hashauth = require('../lib/client/hashauth');
