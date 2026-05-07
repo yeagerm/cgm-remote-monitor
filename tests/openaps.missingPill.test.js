@@ -13,15 +13,33 @@ const workingStatus = require('./data/statusWithWorkingForecast.json');
 describe('OpenAPS Visualization Tests', function () {
     let ctx, now, pillOptions;
 
+    function updateMills (statuses) {
+        let top_ctx = helper.getctx();
+        _.forEach(statuses, function setMills (status) {
+            status.mills = top_ctx.moment(status.created_at).valueOf();
+        });
+    }
+
+    function visualize (statuses) {
+        pillOptions = undefined;
+        const sbx = sandbox.clientInit(ctx, now.valueOf(), { devicestatus: statuses });
+        openaps.setProperties(sbx);
+        openaps.updateVisualisation(sbx);
+        return sbx.properties.openaps;
+    }
+
+    function pillText () {
+        should.exist(pillOptions);
+        return pillOptions.info.map(function getValue (item) {
+            return item.value;
+        }).join(' ');
+    }
+
     beforeEach(function () {
         let top_ctx = helper.getctx();
         now = top_ctx.moment(missingRateOnLastEnacted[0].created_at);
-        _.forEach(missingRateOnLastEnacted, function updateMills (status) {
-            status.mills = top_ctx.moment(status.created_at).valueOf();
-        });
-        _.forEach(workingStatus, function updateMills (status) {
-            status.mills = top_ctx.moment(status.created_at).valueOf();
-        });
+        updateMills(missingRateOnLastEnacted);
+        updateMills(workingStatus);
         ctx = {
             settings: {
                 units: 'mg/dl',
@@ -41,30 +59,36 @@ describe('OpenAPS Visualization Tests', function () {
     });
 
     it('should correctly generate pill and prediction lines for working status', function (done) {
-        const sbx = sandbox.clientInit(ctx, now.valueOf(), { devicestatus: workingStatus });
-        openaps.setProperties(sbx);
-        openaps.updateVisualisation(sbx);
-
-        const result = sbx.properties.openaps;
+        const result = visualize(workingStatus);
         should.exist(result.lastPredBGs);
         result.lastPredBGs.UAM.should.be.an.Array();
         done();
     });
 
     it('should correctly generate pill and prediction lines for status without rate on last enacted', function (done) {
-        const sbx = sandbox.clientInit(ctx, now.valueOf(), { devicestatus: missingRateOnLastEnacted });
-        openaps.setProperties(sbx);
-        openaps.updateVisualisation(sbx);
-
-        const result = sbx.properties.openaps;
+        const result = visualize(missingRateOnLastEnacted);
         should.exist(result.lastPredBGs);
         result.lastPredBGs.UAM.should.be.an.Array();
-        should.exist(pillOptions);
-        const pillText = pillOptions.info.map(function getValue (item) {
-            return item.value;
-        }).join(' ');
-        pillText.should.not.containEql('undefined');
-        pillText.should.not.containEql('Temp Basal Started');
+        pillText().should.not.containEql('undefined');
+        pillText().should.not.containEql('Temp Basal Started');
+        done();
+    });
+
+    it('should not coerce blank or null temp basal details', function (done) {
+        const missingDetails = [
+            { rate: null },
+            { rate: '' },
+            { duration: null },
+            { duration: '' }
+        ];
+        _.forEach(missingDetails, function checkMissingDetailValue (details) {
+            const statuses = _.cloneDeep(workingStatus);
+            _.assign(statuses[0].openaps.enacted, details);
+            updateMills(statuses);
+            visualize(statuses);
+            pillText().should.not.containEql('Temp Basal Started');
+            pillText().should.not.containEql('undefined');
+        });
         done();
     });
 });
