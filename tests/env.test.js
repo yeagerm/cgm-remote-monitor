@@ -1,41 +1,58 @@
 'use strict';
 
-require('should');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+var should = require('should');
+var fs = require('fs');
+var os = require('os');
+var path = require('path');
 
 describe('env', function () {
-  function writeTempFile(fileName, data) {
-    const fullPath = path.join(os.tmpdir(), fileName);
+  var tempDirs = [];
+
+  function writeTempFile(data) {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nightscout-api-secret-'));
+    const fullPath = path.join(tempDir, 'api_secret');
+    tempDirs.push(tempDir);
     fs.writeFileSync(fullPath, data);
     return fullPath;
   }
 
+  afterEach(function () {
+    delete process.env.API_SECRET;
+    delete process.env.API_SECRET_FILE;
+
+    while (tempDirs.length > 0) {
+      fs.rmSync(tempDirs.pop(), { recursive: true, force: true });
+    }
+  });
+
   it('should not set the API key without API_SECRET or API_SECRET_FILE', function () {
     delete process.env.API_SECRET;
+    delete process.env.API_SECRET_FILE;
+
     var env = require( '../lib/server/env' )();
+
     env.enclave.isApiKeySet().should.equal(false);
   });
 
-  it('should read the API key from API_SECRET_FILE if it is valid', function () {
-    const apiSecretFile = 'this is another pass phrase';
+  it('should read and trim the API key from API_SECRET_FILE if it is valid', function () {
+    const apiSecretFile = 'this is another pass phrase\n';
     const hashFile = 'c79c6db1070da3537d0162e60647b0a588769f8d';
-    process.env.API_SECRET_FILE = writeTempFile('api_secret_file', apiSecretFile);
+    process.env.API_SECRET_FILE = writeTempFile(apiSecretFile);
 
     var env = require( '../lib/server/env' )();
+
     env.enclave.isApiKeySet().should.equal(true);
     env.enclave.isApiKey(hashFile).should.equal(true);
-
-    fs.rmSync(process.env.API_SECRET_FILE);
-    delete process.env.API_SECRET_FILE;
   });
 
   it('should raise an error when API_SECRET_FILE does not exist', function () {
-    const nonexistentPath = path.join(os.tmpdir(), 'api_secret_file');
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nightscout-api-secret-'));
+    tempDirs.push(tempDir);
+    const nonexistentPath = path.join(tempDir, 'missing_api_secret');
     process.env.API_SECRET_FILE = nonexistentPath;
 
     var env = require( '../lib/server/env' )();
+
     env.enclave.isApiKeySet().should.equal(false);
     env.err.length.should.equal(1);
 
@@ -43,8 +60,6 @@ describe('env', function () {
     error.should.have.property('desc');
     error.desc.should.match(/API_SECRET_FILE/);
     error.desc.should.match(/no such file or directory/);
-
-    delete process.env.API_SECRET_FILE;
   });
 
   it('should use API_SECRET when API_SECRET_FILE is also specified', function () {
@@ -54,16 +69,13 @@ describe('env', function () {
 
     const apiSecretFile = 'this is another pass phrase';
     const hashFile = 'c79c6db1070da3537d0162e60647b0a588769f8d';
-    process.env.API_SECRET_FILE = writeTempFile('api_secret_file', apiSecretFile);
+    process.env.API_SECRET_FILE = writeTempFile(apiSecretFile);
 
     var env = require( '../lib/server/env' )();
+
     env.enclave.isApiKeySet().should.equal(true);
     env.enclave.isApiKey(hashEnv).should.equal(true);
     env.enclave.isApiKey(hashFile).should.equal(false);
-
-    fs.rmSync(process.env.API_SECRET_FILE);
-    delete process.env.API_SECRET_FILE;
-    delete process.env.API_SECRET;
   });
 
   it( 'show the right plugins', function () {
@@ -130,6 +142,77 @@ describe('env', function () {
     env = require( '../lib/server/env' )();
     env.insecureUseHttp.should.be.false(); // not defined should be false
     env.secureHstsHeader.should.be.true();
+  });
+
+  describe('HOSTNAME', function () {
+    var originalHostname;
+    var originalNightscoutHostname;
+    var originalContainer;
+
+    beforeEach(function () {
+      originalHostname = process.env.HOSTNAME;
+      originalNightscoutHostname = process.env.NIGHTSCOUT_HOSTNAME;
+      originalContainer = process.env.container;
+
+      delete process.env.HOSTNAME;
+      delete process.env.NIGHTSCOUT_HOSTNAME;
+      delete process.env.container;
+    });
+
+    afterEach(function () {
+      if (originalHostname === undefined) {
+        delete process.env.HOSTNAME;
+      } else {
+        process.env.HOSTNAME = originalHostname;
+      }
+
+      if (originalNightscoutHostname === undefined) {
+        delete process.env.NIGHTSCOUT_HOSTNAME;
+      } else {
+        process.env.NIGHTSCOUT_HOSTNAME = originalNightscoutHostname;
+      }
+
+      if (originalContainer === undefined) {
+        delete process.env.container;
+      } else {
+        process.env.container = originalContainer;
+      }
+    });
+
+    it('prefers NIGHTSCOUT_HOSTNAME over legacy HOSTNAME', function () {
+      process.env.NIGHTSCOUT_HOSTNAME = '0.0.0.0';
+      process.env.HOSTNAME = 'legacy-hostname';
+
+      var env = require('../lib/server/env')();
+
+      env.HOSTNAME.should.equal('0.0.0.0');
+    });
+
+    it('treats empty NIGHTSCOUT_HOSTNAME as all interfaces', function () {
+      process.env.NIGHTSCOUT_HOSTNAME = '';
+      process.env.HOSTNAME = 'legacy-hostname';
+
+      var env = require('../lib/server/env')();
+
+      should(env.HOSTNAME).equal(null);
+    });
+
+    it('keeps legacy HOSTNAME when explicitly configured outside Docker', function () {
+      process.env.HOSTNAME = '127.0.0.1';
+
+      var env = require('../lib/server/env')();
+
+      env.HOSTNAME.should.equal('127.0.0.1');
+    });
+
+    it('ignores Docker generated HOSTNAME', function () {
+      process.env.container = 'docker';
+      process.env.HOSTNAME = os.hostname();
+
+      var env = require('../lib/server/env')();
+
+      should(env.HOSTNAME).equal(null);
+    });
   });
 
   describe( 'DISPLAY_UNITS', function () {
