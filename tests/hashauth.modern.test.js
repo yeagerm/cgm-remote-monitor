@@ -131,7 +131,7 @@ describe('hashauth (modern jsdom)', function () {
     hashauth.isAuthenticated().should.equal(true);
   });
 
-  it('stores sha1 in localStorage when storeapisecret=true, then clears on remove', function () {
+  it('stores sha1 in localStorage when storeapisecret=true, then clears on remove', function (done) {
     env.window.localStorage.removeItem('apisecrethash');
 
     hashauth.init(client, $stub);
@@ -142,18 +142,24 @@ describe('hashauth (modern jsdom)', function () {
     hashauth.updateSocketAuth = function () {};
 
     client.init();
-    hashauth.processSecret('this is my long pass phrase', true);
+    hashauth.processSecret('this is my long pass phrase', true, function (success) {
+      try {
+        success.should.equal(true);
+        hashauth.hash().should.equal('b723e97aa97846eb92d5264f084b2823f57c4aa1');
+        env.window.localStorage.getItem('apisecrethash')
+          .should.equal('b723e97aa97846eb92d5264f084b2823f57c4aa1');
+        hashauth.isAuthenticated().should.equal(true);
 
-    hashauth.hash().should.equal('b723e97aa97846eb92d5264f084b2823f57c4aa1');
-    env.window.localStorage.getItem('apisecrethash')
-      .should.equal('b723e97aa97846eb92d5264f084b2823f57c4aa1');
-    hashauth.isAuthenticated().should.equal(true);
-
-    hashauth.removeAuthentication();
-    hashauth.isAuthenticated().should.equal(false);
+        hashauth.removeAuthentication();
+        hashauth.isAuthenticated().should.equal(false);
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
   });
 
-  it('does not store sha1 when storeapisecret=false', function () {
+  it('does not store sha1 when storeapisecret=false', function (done) {
     env.window.localStorage.removeItem('apisecrethash');
 
     hashauth.init(client, $stub);
@@ -163,11 +169,17 @@ describe('hashauth (modern jsdom)', function () {
     };
 
     client.init();
-    hashauth.processSecret('this is my long pass phrase', false);
-
-    hashauth.hash().should.equal('b723e97aa97846eb92d5264f084b2823f57c4aa1');
-    should(env.window.localStorage.getItem('apisecrethash')).equal(null);
-    hashauth.isAuthenticated().should.equal(true);
+    hashauth.processSecret('this is my long pass phrase', false, function (success) {
+      try {
+        success.should.equal(true);
+        hashauth.hash().should.equal('b723e97aa97846eb92d5264f084b2823f57c4aa1');
+        should(env.window.localStorage.getItem('apisecrethash')).equal(null);
+        hashauth.isAuthenticated().should.equal(true);
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
   });
 
   it('alerts on short API secret', function () {
@@ -179,6 +191,45 @@ describe('hashauth (modern jsdom)', function () {
 
     alerts.length.should.be.greaterThan(0);
     alerts[0].should.match(/Too short API secret/);
+  });
+
+  it('hashes via JS fallback when subtle crypto and TextEncoder are absent', function (done) {
+    env.window.localStorage.removeItem('apisecrethash');
+
+    var originalSubtle = env.window.crypto.subtle;
+    var originalTextEncoder = global.TextEncoder;
+    var originalWindowTextEncoder = env.window.TextEncoder;
+
+    function restore () {
+      env.window.crypto.subtle = originalSubtle;
+      global.TextEncoder = originalTextEncoder;
+      env.window.TextEncoder = originalWindowTextEncoder;
+    }
+
+    env.window.crypto.subtle = null;
+    global.TextEncoder = undefined;
+    env.window.TextEncoder = undefined;
+
+    hashauth.init(client, $stub);
+    hashauth.verifyAuthentication = function (next) {
+      hashauth.authenticated = true;
+      next(true);
+    };
+
+    client.init();
+
+    hashauth.processSecret('this is my long pass phrase', false, function (success) {
+      try {
+        restore();
+        success.should.equal(true);
+        hashauth.hash().should.equal('b723e97aa97846eb92d5264f084b2823f57c4aa1');
+        should(env.window.localStorage.getItem('apisecrethash')).equal(null);
+        hashauth.isAuthenticated().should.equal(true);
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
   });
 
 });

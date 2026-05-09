@@ -1,7 +1,6 @@
 'use strict';
 
 require('should');
-var _ = require('lodash');
 var benv = require('./fixtures/benv-loader');
 var read = require('fs').readFileSync;
 var serverSettings = require('./fixtures/default-server-settings');
@@ -324,45 +323,11 @@ exampleProfile[0].startDate.setSeconds(0);
 exampleProfile[0].startDate.setMilliseconds(0);
 
 
-// XXX: Phase 4 (Track 1, drop benv) — this test is intentionally skipped.
-//
-// reports.test.js drives the full webpack `bundle.app.js` through the
-// legacy benv/headless harness to render report HTML and assert on
-// jQuery+Flot output. Two structural problems make it unportable today:
-//
-//   1. Re-running the bundle's IIFE against a fresh jsdom window inside
-//      mocha's test ordering does not re-initialize `window.Nightscout`
-//      (entry module 38211 is re-compiled but its side-effect writes to
-//      the *new* window are not observable). The legacy `benv`+`rewire`
-//      path side-stepped this via vm.runInThisContext semantics that we
-//      cannot faithfully reproduce without re-introducing rewire (which
-//      itself hangs under modern jQuery DOM-ready timing — verified).
-//
-//   2. The report rendering this test exercises is slated for migration
-//      to a server-side statistics API (see
-//      docs/proposals/testing-modernization-proposal.md, Track 3 /
-//      Future). Once that API ships, the right test surface is
-//      lib/server-side stats, not jsdom-rendered Flot charts.
-//
-// PHASE 5c COVERAGE REPLACEMENT (Track 2):
-//   - Per-plugin stats math is exercised by dedicated suites:
-//     basalprofileplugin.test.js, daytodayplugin.test.js,
-//     foodstatsplugin.test.js, glucosedistributionplugin.test.js,
-//     hourlystatsplugin.test.js, profileplugin.test.js,
-//     loopalyzerplugin.test.js, reportstorage.test.js, etc.
-//   - Bundle wiring (was the bundle built? does it expose
-//     window.Nightscout.{client,reportclient,profileclient}?) is
-//     covered by tests/bundle.smoke.test.js.
-//   - Real chart-renders-with-data verification is the operator's
-//     job per docs/test-specs/manual-smoke-checklist.md §3.
-//
-// Coverage gap is documented in docs/test-specs/coverage-gaps.md and
-// the originating issue tracking the server-side stats migration.
 describe.skip('reports', function ( ) {
   var self = this;
   var headless = require('./fixtures/headless')(benv, this);
   this.timeout(80000);
-  
+
   before(function (done) {
     done( );
   });
@@ -407,8 +372,8 @@ describe.skip('reports', function ( ) {
      window.alert = function mockAlert () {
        return true;
      };
-     
-     
+
+
      window.setTimeout = function mockSetTimeout (call, timer) {
        if (timer == 60000) return;
        call();
@@ -449,7 +414,7 @@ describe.skip('reports', function ( ) {
       $('img.editTreatment:first').click();
       $('.ui-button:contains("Save")').click();
 
-      
+
       var result = $('body').html();
       /*
       var filesys = require('fs');
@@ -488,7 +453,7 @@ describe.skip('reports', function ( ) {
      window.alert = function mockAlert () {
        return true;
      };
-  
+
      window.setTimeout = function mockSetTimeout (call, timer) {
       if (timer == 60000) return;
       call();
@@ -529,7 +494,7 @@ describe.skip('reports', function ( ) {
 
       done();
     });
-    
+
   });
-  
+
 });
