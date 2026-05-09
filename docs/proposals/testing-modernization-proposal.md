@@ -394,10 +394,19 @@ Note: `benv` removed; direct jsdom usage with secure harness.
 ## Success Criteria
 
 ### Track 1 (Testing Foundation)
-- [ ] All API tests pass with updated dependencies
-- [ ] hashauth tests pass with secure jsdom harness
-- [ ] CI pipeline green
-- [ ] Test execution under 5 minutes
+- [x] All API tests pass with updated dependencies (jsdom@24, mocha 10, supertest 7, nyc 17)
+- [x] hashauth tests pass with secure jsdom harness (`tests/hashauth.modern.test.js`)
+- [x] `benv` package removed; single jsdom@24 dependency tree (Phase 4, 2026-05)
+- [x] CI pipeline green on Node 22 / Node 24 (880 passing / 4 pending / 0 failing, ~44s)
+- [x] Test execution under 5 minutes (44s wall-clock)
+- [ ] Remaining legacy bundle-driven tests modernized or formally retired:
+  - `careportal.test.js` — still drives the webpack bundle through the
+    benv-shim; pending Track 2 extraction or DOM-integration port.
+  - `profileeditor.test.js` — unconditionally skipped pending
+    jsdom-native rewrite (plan §3 row 6).
+  - `reports.test.js` — `describe.skip`, see
+    `docs/test-specs/coverage-gaps.md`; superseded by future
+    server-side stats API (Track 3).
 
 ### Track 2 (Logic/DOM Separation)
 - [ ] `lib/client-core/` established with extracted modules
