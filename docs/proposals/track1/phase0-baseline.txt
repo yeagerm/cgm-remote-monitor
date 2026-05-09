@@ -86,3 +86,36 @@ Active runtime during baseline capture: node v24.15.0 / npm 11.12.1 (satisfies n
 - "Unable to find element for #chartContainer" warnings during admintools/careportal/profileeditor/reports
   are noise from the bundle init in jsdom 11; expected to disappear once we move to fixture-isolated harness.
 - mongodb-legacy@5.0.0 marked extraneous in npm ls — pre-existing, not addressed in Phase 0.
+
+=== Addendum: clean baseline after my.test.env fixes ===
+Date: 2026-05-09
+Discovery: my.test.env is gitignored (matches '.gitignore: my.*.env') so it
+is local-developer-state. Two settings in this developer's local file
+caused the 3 baseline failures; both are environmental, not code:
+
+1. AUTH_DEFAULT_ROLES=careportal
+   The 'careportal' role only grants 'api:treatments:create'; it does NOT
+   include 'api:status:read', so /status.json returned 401 in
+   security.test.js (which calls ping_status() expecting 200 BEFORE setting
+   the api-secret). This was misread initially as auth-throttle carry-over.
+   Fix: AUTH_DEFAULT_ROLES=careportal readable
+
+2. MONGO_CONNECTION=mongodb://localhost:27017/nightscout_test
+   tests/mongo-storage.test.js:41 hardcodes
+       db.db.databaseName.should.equal('testdb')
+   tests/ci.test.env uses /testdb in CI. Local devs must use the same DB
+   name to satisfy this assertion.
+   Fix: MONGO_CONNECTION=mongodb://localhost:27017/testdb
+
+Result after both fixes (no source/test changes):
+   878 passing (55s)
+   1 pending
+   0 failing
+
+Recommendation for follow-up (out of Track-1 Phase 0 scope):
+- Add a documented example my.test.env (perhaps docs/example-template.env
+  already exists — verify and align). Several other contributors will hit
+  the same 'careportal' / 'testdb' surprise.
+- Consider relaxing tests/mongo-storage.test.js:41 to read the expected
+  database name from the connection string the test itself parsed, rather
+  than hardcoding 'testdb'.
