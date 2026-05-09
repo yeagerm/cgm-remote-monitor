@@ -1,7 +1,7 @@
 'use strict';
 
 require('should');
-var benv = require('benv');
+var benv = require('./fixtures/benv-loader');
 
 describe('pluginbase', function ( ) {
   this.timeout(50000); // TODO: see why this test takes longer on Travis to complete

@@ -88,12 +88,30 @@ function setup (callback, options) {
   if (callback) callback();
 }
 
+function setOnWindow (win, name, value) {
+  // Modern jsdom mirrors browser semantics for some properties
+  // (notably `localStorage`, `sessionStorage`) — they're getter-only on
+  // Window. Direct assignment throws TypeError. defineProperty replaces
+  // the descriptor wholesale, which is exactly the override semantics
+  // tests expect from benv.
+  try {
+    Object.defineProperty(win, name, {
+      configurable: true,
+      writable: true,
+      enumerable: true,
+      value: value
+    });
+  } catch (e) {
+    win[name] = value;
+  }
+}
+
 function expose (globals) {
   if (!activeEnv) {
     throw new Error('benv-shim: expose() called before setup()');
   }
   Object.keys(globals).forEach(function (key) {
-    activeEnv.window[key] = globals[key];
+    setOnWindow(activeEnv.window, key, globals[key]);
     setGlobal(key, globals[key]);
     exposedKeys.add(key);
   });

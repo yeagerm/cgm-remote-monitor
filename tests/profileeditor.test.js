@@ -2,7 +2,7 @@
 
 require('should');
 var _ = require('lodash');
-var benv = require('benv');
+var benv = require('./fixtures/benv-loader');
 var read = require('fs').readFileSync;
 
 var nowData = require('../lib/data/ddata')();

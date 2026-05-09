@@ -1,7 +1,7 @@
 'use strict';
 
 require('should');
-var benv = require('benv');
+var benv = require('./fixtures/benv-loader');
 var read = require('fs').readFileSync;
 var serverSettings = require('./fixtures/default-server-settings');
 
