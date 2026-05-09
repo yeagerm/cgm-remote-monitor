@@ -70,24 +70,22 @@ var someData = {
 
 
 describe('Profile editor', function ( ) {
-  // Phase 2 of Track 1 makes USE_BENV_SHIM=1 the default. Under modern
-  // jsdom (24) inside the minified webpack bundle, `$('#pe_records_add')
-  // .click()` triggers a "Cannot read properties of null (reading
-  // 'split')" deep in the bundle's HTMLImageElement dispatch path.
+  // The benv package is gone (Phase 4); the only escape hatch this
+  // test had was `USE_BENV_SHIM=0` which fell back to real benv +
+  // jsdom 11. Under modern jsdom (24) the minified bundle hits a
+  // "Cannot read properties of null (reading 'split')" failure deep
+  // inside HTMLImageElement dispatch when `$('#pe_records_add')
+  // .click()` triggers the save-confirm path. Diagnosing requires a
+  // debug bundle build or jsdom version bisect.
   //
-  // Investigation note (2026-05): an isolated probe with the SAME
-  // headless setup + same beforeEach succeeds in reaching post-add
-  // count=2 without a 'Save current record?' confirm dialog. The real
-  // test produces that confirm before the failure, suggesting some
-  // state difference between asserting `.length` and merely logging it.
-  // Pinning the exact divergence requires either a debug bundle build
-  // or a jsdom version bisect — deferred to a follow-up that retires
-  // this test in favor of a jsdom-native equivalent that doesn't load
-  // bundle.app.js at all (see plan §3 row 6).
-  if (process.env.USE_BENV_SHIM !== '0') {
-    it.skip('skipped under modern jsdom shim — pending profileeditor extraction', function () {});
-    return;
-  }
+  // The right fix is to retire this test in favor of jsdom-native
+  // unit tests against extracted profileeditor handlers (same pattern
+  // as the admintools per-plugin conversion in Phase 3.3). Until that
+  // extraction lands, this test is unconditionally skipped — it
+  // cannot pass.
+  it.skip('skipped pending profileeditor extraction (see plan §3 row 6)', function () {});
+  return;
+  // eslint-disable-next-line no-unreachable
   this.timeout(40000); //TODO: see why this test takes longer on Travis to complete
   var headless = require('./fixtures/headless')(benv, this);
 

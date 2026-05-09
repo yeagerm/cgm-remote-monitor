@@ -89,11 +89,6 @@
     "node": ">=22",
     "npm": ">=10"
   },
-  "overrides": {
-    "benv": {
-      "jsdom": "11.11.0"
-    }
-  },
   "dependencies": {
     "@babel/core": "^7.18.10",
     "@babel/preset-env": "^7.18.10",
@@ -169,7 +164,6 @@
     "@types/tough-cookie": "^4.0.0",
     "axios": "^0.21.1",
     "babel-eslint": "^10.1.0",
-    "benv": "^3.3.0",
     "csv-parse": "^4.12.0",
     "env-cmd": "^10.1.0",
     "eslint": "^7.19.0",

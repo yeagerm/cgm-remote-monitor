@@ -32,7 +32,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const rewire = require('rewire');
 const { createSecureDOM } = require('./secure-jsdom');
 
 // Globals we mirror onto the Node `global` object so legacy code can
@@ -117,6 +116,7 @@ function expose (globals) {
   });
 }
 
+
 function shimRequire (filename /*, globalVarName */) {
   if (!path.isAbsolute(filename)) {
     // Real benv resolved relative to module.parent.filename. Modern Node
@@ -127,9 +127,33 @@ function shimRequire (filename /*, globalVarName */) {
   if (!fs.existsSync(filename)) {
     throw new Error('benv-shim.require: file not found: ' + filename);
   }
-  // rewire executes the file as a Node module; the file reads `window` from
-  // global and attaches its exports there (UMD bundles do exactly this).
-  return rewire(filename);
+  // Bust Node's CommonJS cache so each setup() can re-evaluate browser
+  // modules against the (potentially fresh) jsdom window.
+  delete require.cache[filename];
+  const result = require(filename);
+
+  // Webpack UMD bundles attach `$`, `jQuery`, etc. to `window` at module
+  // load. The previous benv (and its `rewire` execution wrapper) used to
+  // also surface those onto the Node `global` object as a side effect.
+  // headless.js relies on that — `self.$ = $` immediately after a bundle
+  // require — so mirror the common UI globals here. Idempotent.
+  if (activeEnv && activeEnv.window) {
+    ['$', 'jQuery'].forEach(function (key) {
+      if (typeof activeEnv.window[key] !== 'undefined') {
+        setGlobal(key, activeEnv.window[key]);
+        exposedKeys.add(key);
+      }
+    });
+  }
+
+  // The webpack bundle also writes some identifiers (`$`, `jQuery`) to
+  // `globalThis` directly via its `n.g` accessor. Mirror those into our
+  // exposed-keys tracker so teardown unwinds cleanly.
+  ['$', 'jQuery'].forEach(function (key) {
+    if (typeof global[key] !== 'undefined') exposedKeys.add(key);
+  });
+
+  return result;
 }
 
 function teardown (clearDOM) {

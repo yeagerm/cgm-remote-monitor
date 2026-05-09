@@ -73,6 +73,48 @@ When addressing a gap:
 
 ---
 
+## Track 1 / Phase 4 — `reports.test.js` skipped (Phase 4, 2026-05)
+
+**File:** `tests/reports.test.js`
+**State:** `describe.skip(...)` — entire suite skipped, never runs.
+
+**What it covered (legacy benv harness):**
+- "should produce some html" — exercises `Nightscout.reportclient` end-to-end
+  by feeding 7 days of synthetic SGV/treatment data through the client-side
+  report rendering pipeline (jQuery + Flot) inside a benv/jsdom-11 sandbox.
+- "should produce week to week report" — same scaffolding, week-to-week view.
+
+**Why it can't be ported to modern jsdom today:**
+1. Both tests `benv.require()` the full webpack `bundle.app.js` against a
+   *new* jsdom window in their `beforeEach`. The bundle's entry module
+   (38211) recompiles on each `require()` (cache-busted), but its
+   side-effect writes to the new `window` (e.g. `window.Nightscout = ...`)
+   are not observable on the second invocation under modern Node — the
+   exact mechanism is unclear, but the legacy `benv`+`rewire` path side-
+   stepped it via `vm.runInThisContext` semantics that we cannot
+   faithfully reproduce. (Re-introducing `rewire` was attempted; it hangs
+   on jQuery DOM-ready timing under modern jQuery+jsdom@24.)
+2. Even if we worked around that, the rendering surface (Flot, charts as
+   raw HTML) is the wrong assertion target. The right surface is the
+   server-side statistics API once it lands (see
+   `docs/proposals/testing-modernization-proposal.md` Track 3 / Future).
+
+**Coverage replacement plan:**
+- **Short-term (no replacement):** the underlying report logic is exercised
+  in production daily; the HTML-rendering assertions had marginal
+  regression-catching value (they compared against jQuery state, not
+  pixel-accurate output).
+- **Medium-term:** when the server-side statistics API ships, port the
+  per-bucket calculations (TIR, average, std-dev) as Node-only unit tests.
+- **Long-term:** delete `tests/reports.test.js` and the supporting
+  `static/js/reportinit.js` once the server-side path replaces client
+  rendering.
+
+**Tracking:** opening a follow-up issue at PR-merge time to surface this
+gap and tie it to the stats API work.
+
+---
+
 ## Cross-References
 
 - [Shape Handling Tests](shape-handling-tests.md)

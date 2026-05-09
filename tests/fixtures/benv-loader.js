@@ -3,20 +3,15 @@
 /*
  * benv-loader.js
  *
- * Single chokepoint that selects between the modern jsdom shim and
- * the legacy `benv` package.
+ * Phase 4: the `benv` package has been removed. This loader now
+ * unconditionally returns the modern jsdom shim, which exposes the
+ * same `setup`/`expose`/`require`/`teardown` API that legacy tests
+ * (careportal, profileeditor, reports) still consume via headless.js.
  *
- * As of Phase 2 the DEFAULT is the shim (`./benv-shim`). Set
- * USE_BENV_SHIM=0 to fall back to the real benv package — this
- * remains supported until Phase 3.6 modernizes the last test that
- * still depends on legacy bundle behavior (profileeditor).
- *
- * Phase 4 will delete this loader, drop the benv package, and direct
- * callers at the shim (or refactored modern fixture) directly.
+ * The loader survives as a single chokepoint so the remaining legacy
+ * tests can be migrated to require `./benv-shim` (or its successor)
+ * directly without coordinating a multi-file change. Once those tests
+ * are modernized this file should be deleted.
  */
 
-if (process.env.USE_BENV_SHIM === '0') {
-  module.exports = require('benv');
-} else {
-  module.exports = require('./benv-shim');
-}
+module.exports = require('./benv-shim');
