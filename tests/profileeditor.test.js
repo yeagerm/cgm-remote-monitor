@@ -70,14 +70,22 @@ var someData = {
 
 
 describe('Profile editor', function ( ) {
-  // Phase 2 of Track 1 makes USE_BENV_SHIM=1 the default. The minified
-  // bundle this test exercises hits a jsdom 11 -> 24 attribute return-
-  // value diff inside jQuery's click handler chain (null vs ""), which
-  // can't be cleanly patched without rebuilding the bundle. Skip under
-  // the modern shim until Phase 3.6 retires this test in favor of a
-  // jsdom-native equivalent that doesn't load the bundle at all.
+  // Phase 2 of Track 1 makes USE_BENV_SHIM=1 the default. Under modern
+  // jsdom (24) inside the minified webpack bundle, `$('#pe_records_add')
+  // .click()` triggers a "Cannot read properties of null (reading
+  // 'split')" deep in the bundle's HTMLImageElement dispatch path.
+  //
+  // Investigation note (2026-05): an isolated probe with the SAME
+  // headless setup + same beforeEach succeeds in reaching post-add
+  // count=2 without a 'Save current record?' confirm dialog. The real
+  // test produces that confirm before the failure, suggesting some
+  // state difference between asserting `.length` and merely logging it.
+  // Pinning the exact divergence requires either a debug bundle build
+  // or a jsdom version bisect — deferred to a follow-up that retires
+  // this test in favor of a jsdom-native equivalent that doesn't load
+  // bundle.app.js at all (see plan §3 row 6).
   if (process.env.USE_BENV_SHIM !== '0') {
-    it.skip('skipped under modern jsdom shim — see Phase 3.6 / docs/proposals/track1/phase1c-shim-parity.txt', function () {});
+    it.skip('skipped under modern jsdom shim — pending profileeditor extraction', function () {});
     return;
   }
   this.timeout(40000); //TODO: see why this test takes longer on Travis to complete
