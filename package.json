@@ -28,6 +28,7 @@
   "scripts": {
     "start": "node lib/server/server.js",
     "test": "env-cmd -f ./my.test.env mocha --timeout 5000 --require ./tests/hooks.js --exit ./tests/*.test.js",
+    "test:core": "mocha --timeout 5000 --exit ./tests/client-core/**/*.test.js",
     "test-single": "env-cmd -f ./my.test.env mocha --timeout 5000 --require ./tests/hooks.js --exit ./tests/$TEST.test.js",
     "test-ci": "env-cmd -f ./tests/ci.test.env nyc --reporter=lcov --reporter=text-summary mocha --timeout 5000 --require ./tests/hooks.js --exit ./tests/*.test.js",
     "test:fast": "env-cmd -f ./my.test.env mocha --timeout 5000 --require ./tests/hooks.js --exit --reporter min ./tests/*.test.js",
