@@ -344,6 +344,18 @@ exampleProfile[0].startDate.setMilliseconds(0);
 //      Future). Once that API ships, the right test surface is
 //      lib/server-side stats, not jsdom-rendered Flot charts.
 //
+// PHASE 5c COVERAGE REPLACEMENT (Track 2):
+//   - Per-plugin stats math is exercised by dedicated suites:
+//     basalprofileplugin.test.js, daytodayplugin.test.js,
+//     foodstatsplugin.test.js, glucosedistributionplugin.test.js,
+//     hourlystatsplugin.test.js, profileplugin.test.js,
+//     loopalyzerplugin.test.js, reportstorage.test.js, etc.
+//   - Bundle wiring (was the bundle built? does it expose
+//     window.Nightscout.{client,reportclient,profileclient}?) is
+//     covered by tests/bundle.smoke.test.js.
+//   - Real chart-renders-with-data verification is the operator's
+//     job per docs/test-specs/manual-smoke-checklist.md §3.
+//
 // Coverage gap is documented in docs/test-specs/coverage-gaps.md and
 // the originating issue tracking the server-side stats migration.
 describe.skip('reports', function ( ) {

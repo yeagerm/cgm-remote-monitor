@@ -100,10 +100,16 @@ When addressing a gap:
    `docs/proposals/testing-modernization-proposal.md` Track 3 / Future).
 
 **Coverage replacement plan:**
-- **Short-term (no replacement):** the underlying report logic is exercised
-  in production daily; the HTML-rendering assertions had marginal
-  regression-catching value (they compared against jQuery state, not
-  pixel-accurate output).
+- **Short-term (Phase 5c, Track 2):** structural wiring is now covered
+  by `tests/bundle.smoke.test.js` (boots `bundle.app.js` in jsdom and
+  asserts `Nightscout.client/.reportclient/.profileclient/.units` are
+  exposed). Per-plugin stats math is exercised by dedicated suites:
+  `basalprofileplugin.test.js`, `daytodayplugin.test.js`,
+  `foodstatsplugin.test.js`, `glucosedistributionplugin.test.js`,
+  `hourlystatsplugin.test.js`, `loopalyzerplugin.test.js`,
+  `profileplugin.test.js`, `reportstorage.test.js`. End-to-end
+  rendering checks moved to a manual checklist:
+  `docs/test-specs/manual-smoke-checklist.md` §3.
 - **Medium-term:** when the server-side statistics API ships, port the
   per-bucket calculations (TIR, average, std-dev) as Node-only unit tests.
 - **Long-term:** delete `tests/reports.test.js` and the supporting
