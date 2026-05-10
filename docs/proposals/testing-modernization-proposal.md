@@ -414,10 +414,20 @@ Note: `benv` removed; direct jsdom usage with secure harness.
 
 ### Track 2 (Logic/DOM Separation)
 - [x] `lib/client-core/` established with extracted modules
-  (`careportal/`, `profile-editor/`)
-- [x] Extracted pure logic covered by 92 Node-only tests
-  (`npm run test:core`, ~21 ms)
-- [x] No regressions in existing functionality (890 passing)
+  (`careportal/`, `profile-editor/`, `devicestatus/`)
+- [x] Extracted pure logic covered by 181 Node-only tests
+  (`npm run test:core`, ~70 ms)
+- [x] Phase 5c: devicestatus pill math extracted to
+  `lib/client-core/devicestatus/{uploader,loop,pump}.js`. Plugins
+  `lib/plugins/{loop,pump}.js` delegate to the pure modules; OpenAPS
+  pill extraction is deferred (still has tight `moment`/sandbox
+  coupling — tracked in `coverage-gaps.md`).
+- [x] Captured-fixture library at `tests/fixtures/captured/`
+  (sanitized real Loop iOS data, regenerable via
+  `tools/captured-fixtures/sanitize.js`); golden tests for
+  profile migration and careportal normalization run against it.
+- [x] No regressions in existing functionality (1101 passing on
+  `npm run test:fast`)
 - [x] Clear guidelines for new code placement
   (`lib/client-core/index.js` doc-comment: no `$`, `window`,
   `document`, or `ajax` allowed)

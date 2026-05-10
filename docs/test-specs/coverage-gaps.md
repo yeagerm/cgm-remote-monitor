@@ -1,8 +1,36 @@
 # Test Coverage Gaps - Aggregated View
 
-**Last Updated:** January 2026
+**Last Updated:** May 2026
 
 This document aggregates coverage gaps from all test specifications to provide a prioritized view for planning test development work.
+
+---
+
+## Recently Closed (Phase 5c, May 2026)
+
+- **Loop devicestatus pill math** — extracted to
+  `lib/client-core/devicestatus/loop.js` and covered by
+  `tests/client-core/devicestatus-loop.test.js` against captured
+  Loop iOS fixtures (`tests/fixtures/captured/devicestatus.json`).
+- **Pump devicestatus latest-pick** — extracted to
+  `lib/client-core/devicestatus/pump.js` and covered by
+  `tests/client-core/devicestatus-pump.test.js`.
+- **Uploader classification** — new pure helper at
+  `lib/client-core/devicestatus/uploader.js` with full branch
+  coverage (`tests/client-core/devicestatus-uploader.test.js`).
+
+## Still Open — devicestatus follow-ups
+
+- **OpenAPS pill math** is *not* yet extracted. The `openaps.analyzeData()`
+  reduction in `lib/plugins/openaps.js` is more tightly coupled to
+  `moment` and the sandbox `device` map than the Loop equivalent;
+  splitting it cleanly requires more refactor than Phase 5c
+  scoped. Tracked here so it isn't mistaken for done.
+- **Captured fixture set is Loop iOS only.** OpenAPS / AAPS / Trio /
+  xDrip+ devicestatus payloads are not represented; the
+  `classifyUploader` and `selectLoopState` helpers are only
+  *executed* against synthetic minimal fixtures for those
+  controllers. See `tests/fixtures/captured/README.md`.
 
 ---
 
