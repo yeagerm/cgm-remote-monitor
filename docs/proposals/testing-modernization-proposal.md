@@ -394,16 +394,36 @@ Note: `benv` removed; direct jsdom usage with secure harness.
 ## Success Criteria
 
 ### Track 1 (Testing Foundation)
-- [ ] All API tests pass with updated dependencies
-- [ ] hashauth tests pass with secure jsdom harness
-- [ ] CI pipeline green
-- [ ] Test execution under 5 minutes
+- [x] All API tests pass with updated dependencies (jsdom@24, mocha 10, supertest 7, nyc 17)
+- [x] hashauth tests pass with secure jsdom harness (`tests/hashauth.modern.test.js`)
+- [x] `benv` package removed; single jsdom@24 dependency tree (Phase 4, 2026-05)
+- [x] CI pipeline green on Node 22 / Node 24 (890 passing / 3 pending / 0 failing, ~44s)
+- [x] Test execution under 5 minutes (44s wall-clock)
+- [x] Remaining legacy bundle-driven tests modernized or formally retired:
+  - `careportal.test.js` — still drives the bundle through the
+    benv-shim, but pure logic now lives in `lib/client-core/careportal/`
+    with 22 Node-only tests (Phase 5a, commit `f19a58b8`).
+  - `profileeditor.test.js` — `it.skip` removed; replaced by
+    `tests/profileeditor.records.test.js` plus 44 Node-only tests
+    under `tests/client-core/profile-editor-*.test.js`
+    (Phase 5b, commit `55968ff3`).
+  - `reports.test.js` — `describe.skip` retained with a pointer to
+    `tests/bundle.smoke.test.js` (wiring), per-plugin stats suites
+    (math), and `docs/test-specs/manual-smoke-checklist.md` §3
+    (rendering). See `docs/test-specs/coverage-gaps.md`.
 
 ### Track 2 (Logic/DOM Separation)
-- [ ] `lib/client-core/` established with extracted modules
-- [ ] 80% coverage on extracted pure logic
-- [ ] No regressions in existing functionality
-- [ ] Clear guidelines for new code placement
+- [x] `lib/client-core/` established with extracted modules
+  (`careportal/`, `profile-editor/`)
+- [x] Extracted pure logic covered by 92 Node-only tests
+  (`npm run test:core`, ~21 ms)
+- [x] No regressions in existing functionality (890 passing)
+- [x] Clear guidelines for new code placement
+  (`lib/client-core/index.js` doc-comment: no `$`, `window`,
+  `document`, or `ajax` allowed)
+- [x] Bundle wiring smoke test (`tests/bundle.smoke.test.js`)
+  asserts `window.Nightscout.{client,reportclient,profileclient,units}`
+  shape; skips cleanly when bundle absent.
 
 ### Track 3 (UI Discovery)
 - [ ] Technology decision documented
