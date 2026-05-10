@@ -8,7 +8,7 @@ var moment = require('moment');
 var selectLatestPumpStatus = require('../../lib/client-core/devicestatus/pump');
 
 var CAPTURED = JSON.parse(fs.readFileSync(
-  path.join(__dirname, '..', 'fixtures', 'captured', 'devicestatus.json'), 'utf8'));
+  path.join(__dirname, '..', 'fixtures', 'captured', 'loop', 'devicestatus.json'), 'utf8'));
 
 describe('client-core: devicestatus / pump (selectLatestPumpStatus)', function () {
 

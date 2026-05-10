@@ -28,7 +28,7 @@ var migrate = require('../../lib/client-core/profile-editor/migrate');
 var buildDefaultProfile = require('../../lib/client-core/profile-editor/default-profile');
 
 var CAPTURED = JSON.parse(fs.readFileSync(
-  path.join(__dirname, '..', 'fixtures', 'captured', 'profile.json'), 'utf8'));
+  path.join(__dirname, '..', 'fixtures', 'captured', 'loop', 'profile.json'), 'utf8'));
 
 var RANGE_FIELDS = ['sens', 'target_low', 'target_high', 'basal', 'carbratio'];
 

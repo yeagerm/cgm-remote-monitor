@@ -4,39 +4,54 @@ Pseudonymized, deterministic, size-bounded slices of real
 Nightscout collections, used to drive Node-only unit tests for
 `lib/client-core/` modules with realistic modern payload shapes.
 
+## Layout
+
+Fixtures are organized by **uploader source** under per-source subdirectories:
+
+```
+tests/fixtures/captured/
+├── loop/                # Loop iOS (`loop://iPhone` → `loop://test-device`)
+│   ├── entries.json
+│   ├── treatments.json
+│   ├── devicestatus.json
+│   └── profile.json
+├── trio/                # Trio (oref1 algorithm; `device='Trio'`)
+│   ├── treatments.json
+│   └── devicestatus.json
+└── phone-uploader/      # xDrip4iOS-style phone uploader (no Loop/openaps body)
+    ├── treatments.json
+    └── devicestatus.json
+```
+
 ## Provenance
 
-| File | Records | Source |
+| Source | Files | Records | Notes |
+|---|---|---|---|
+| `loop/` | entries, treatments, devicestatus, profile | 288 / 100 / 30 / 10 | Dexcom G6 + Loop iOS; full predicted/IOB/COB/override |
+| `trio/` | treatments, devicestatus | 80 / 20 | Trio oref1 with `openaps.suggested.predBGs.{ZT,IOB,COB,UAM}`; SMBs present |
+| `phone-uploader/` | treatments, devicestatus | 50 / 30 | Generic phone uploader (xDrip4iOS); devicestatus carries `uploader{battery,type:PHONE}` only — no algorithm body |
+
+All three sets were processed through `tools/captured-fixtures/sanitize.js`.
+The `loop/` slice was captured 2026-05-09 from a remote Nightscout
+instance; `trio/` and `phone-uploader/` were sliced from
+`externals/ns-data/patients/{b,j}/training/`.
+
+## Coverage matrix
+
+| Controller / source | Covered? | Fixture path |
 |---|---|---|
-| `entries.json` | 288 | 1 day of CGM SGV records (Dexcom G6 via Loop iOS) |
-| `treatments.json` | 100 | Loop-emitted Temp Basals + a few Site Change / Correction Bolus |
-| `devicestatus.json` | 30 | Loop iOS uploader (`loop://iPhone`) with full predicted/IOB/COB/override |
-| `profile.json` | 10 | Loop-managed profile records with `loopSettings.overridePresets` |
+| Loop iOS | ✅ | `loop/` |
+| Trio (oref1) | ✅ | `trio/` |
+| Phone-only uploader (xDrip4iOS) | ✅ | `phone-uploader/` |
+| AAPS Android (`device='openaps://AndroidAPS'`) | ❌ gap | — |
+| OpenAPS rig (`openaps://edison`) | ❌ gap | — |
+| xDrip+ Android entries / pebble fields | ❌ gap | — |
+| Medtronic CareLink uploads | ❌ gap | — |
 
-All four files were captured on 2026-05-09 from a real Nightscout
-instance and processed through `tools/captured-fixtures/sanitize.js`.
-
-## ⚠️ Coverage gap: Loop iOS only
-
-The current capture covers **only a Loop iOS-style uploader**. None
-of the following are represented in this fixture set:
-
-- OpenAPS / oref0 devicestatus (`openaps.iob`, `openaps.suggested`,
-  `openaps.enacted` shapes)
-- AAPS (Android) devicestatus + treatment shapes
-- Trio devicestatus
-- xDrip+ entries / pebble fields
-- Medtronic pump uploads (CareLink-style)
-
-Tests fed by these fixtures therefore exercise only the Loop code
-paths in the modules under test. **Absence of OpenAPS/AAPS test
-data here is not evidence of coverage** — the corresponding
-extractors must be exercised against captures from those systems
-when available.
-
-When new captures land, they should be added as
-`*.openaps.json`, `*.aaps.json`, `*.trio.json`, etc., not by
-overwriting these files.
+**Absence of a controller here is not evidence of test coverage.**
+When new captures land, add them under a new `<source>/` subdir and
+register the source in `SOURCES` inside
+`tests/client-core/captured-fixtures.lint.test.js`.
 
 ## Sanitization rules
 
@@ -44,62 +59,71 @@ Performed by `tools/captured-fixtures/sanitize.js`:
 
 1. **`_id` regenerated** as a deterministic 24-hex-char digest of
    the canonicalized record (sha1 of sorted-keys JSON, truncated).
-   Original Mongo `_id` values never appear in the fixtures.
 2. **Device serials scrubbed**: `Dexcom G6 8XRSC5` → `Dexcom G6 SERIAL`.
-3. **Pump IDs scrubbed**: `pump.pumpID` → `'PUMPID'`.
-4. **Uploader names scrubbed**: `uploader.name` → `'test-uploader'`,
+3. **Phone models scrubbed**: `Sony SO-53B` / `Pixel …` / `SM-…` → `Android Phone`.
+4. **Pump IDs scrubbed**: `pump.pumpID` → `'PUMPID'`.
+5. **Uploader names scrubbed**: `uploader.name` → `'test-uploader'`,
    `loop://iPhone` → `loop://test-device`.
-5. **Loop instance name scrubbed**: `loop.name` → `'TestLoop'`.
-6. **Free-text fields dropped**: `notes`, `reason`, `foodType`,
+6. **Loop instance name scrubbed**: `loop.name` → `'TestLoop'`.
+7. **Free-text fields dropped**: `notes`, `reason`, `foodType`,
    `userEnteredAt` are removed from treatments entirely.
-7. **Push tokens stripped**: `loopSettings.deviceToken` deleted.
-8. **Bundle identifier scrubbed**: `loopSettings.bundleIdentifier`
+8. **Push tokens stripped**: `loopSettings.deviceToken` deleted.
+9. **Bundle identifier scrubbed**: `loopSettings.bundleIdentifier`
    → `'test.bundle.identifier'`.
-9. **Override preset names scrubbed**: `loopSettings.overridePresets[i].name`
-   → `'preset-{i+1}'`. Symbols, durations, target ranges, and
-   `insulinNeedsScaleFactor` are preserved (categorical, not identifying).
-10. **`syncIdentifier` regenerated** deterministically (uniqueness
-    preserved, value opaque).
-11. **`enteredBy` pseudonymized**: `'test-user'` for human-style,
-    `'loop://test-device'` for device-style.
-12. **Timestamps shifted** uniformly so the latest `entries[*].date`
-    lands at exactly `2026-05-09T00:00:00.000Z`. Intervals between
-    records and time-of-day patterns are preserved.
-13. **Top-level keys sorted alphabetically** for canonical diff.
+10. **Override preset names scrubbed**: `loopSettings.overridePresets[i].name`
+    → `'preset-{i+1}'`.
+11. **`syncIdentifier` regenerated** deterministically.
+12. **`enteredBy` pseudonymized**: `'test-user'` / `'loop://test-device'`.
+13. **Timestamps shifted** uniformly so the latest record per source
+    lands at `2026-05-09T00:00:00.000Z` (anchor collection: entries
+    if present, else devicestatus, else treatments). Intervals and
+    time-of-day patterns are preserved.
+14. **Top-level keys sorted alphabetically** for canonical diff.
+
+For multi-controller patient dumps (e.g. Trio account that also
+relayed Loop records), sanitizer applies a per-label
+**device prefilter** (`DS_FILTER_BY_LABEL`) so the slice keeps only
+the controller of interest.
 
 ## Determinism guarantee
 
 Re-running the sanitizer on the same source dump produces
-byte-identical output:
-
-```sh
-node tools/captured-fixtures/sanitize.js
-shasum tests/fixtures/captured/*.json
-node tools/captured-fixtures/sanitize.js > /dev/null
-shasum tests/fixtures/captured/*.json   # must match
-```
-
-`tests/captured-fixtures.lint.test.js` enforces this by checking
-that no banned tokens appear and that the loaded fixtures conform
-to the expected shape and size envelope.
+byte-identical output. `tests/client-core/captured-fixtures.lint.test.js`
+enforces no-banned-token + shape + envelope per source.
 
 ## Regenerating
 
 ```sh
+# Loop iOS slice (default label)
 node tools/captured-fixtures/sanitize.js \
-  --src /path/to/raw/dump \
-  --out tests/fixtures/captured
+  --src /path/to/loop/dump \
+  --out tests/fixtures/captured/loop --label loop
+
+# Trio slice (filters to device='Trio', enteredBy='Trio')
+node tools/captured-fixtures/sanitize.js \
+  --src externals/ns-data/patients/b/training \
+  --out tests/fixtures/captured/trio --label trio
+
+# Phone-uploader slice (filters out any record carrying loop/openaps/pump body)
+node tools/captured-fixtures/sanitize.js \
+  --src externals/ns-data/patients/j/training \
+  --out tests/fixtures/captured/phone-uploader --label phone-uploader
 ```
 
-Source dump must contain `entries.json`, `treatments.json`,
-`devicestatus.json`, and `profile.json` matching the response
-shapes of the corresponding Nightscout API v1 endpoints.
+Source dump must contain whichever of `entries.json`, `treatments.json`,
+`devicestatus.json`, `profile.json` are relevant; missing files are
+treated as empty collections.
 
 ## Why these slices and sizes
 
-| File | Limit | Rationale |
+| Source / file | Limit | Rationale |
 |---|---|---|
-| entries | 288 | One day of 5-min CGM data — enough for time-of-day, distribution, and direction-trend tests without bloating the repo. |
-| treatments | 100 | Representative cross-section of Loop-emitted Temp Basals plus the rare manual entries. |
-| devicestatus | 30 | Each record carries a 60-bin `loop.predicted.values` array (~1.5 KB). 30 records keep the file under 100 KB while still spanning enough time for predicted-shape regression tests. |
-| profile | 10 | Captures legacy → modern profile-record migrations and override-preset variety. |
+| loop/entries | 288 | One day of 5-min CGM data — enough for time-of-day, distribution, direction-trend tests. |
+| loop/treatments | 100 | Cross-section of Loop-emitted Temp Basals + manual entries. |
+| loop/devicestatus | 30 | Each record carries a 60-bin `loop.predicted.values` array (~1.5 KB). |
+| loop/profile | 10 | Captures legacy → modern migrations and override-preset variety. |
+| trio/devicestatus | 20 | Trio records are ~3 KB each (predBGs arrays). 20 keeps file <100 KB. |
+| trio/treatments | 80 | Mix of Temp Basal, SMB, Bolus, Carb Correction, Site Change. |
+| phone-uploader/devicestatus | 30 | Records are tiny (no algorithm body); 30 spans enough time for staleness checks. |
+| phone-uploader/treatments | 50 | xDrip4iOS Carbs / Bolus / BG Check only. |
+

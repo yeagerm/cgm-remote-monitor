@@ -11,13 +11,27 @@ This document aggregates coverage gaps from all test specifications to provide a
 - **Loop devicestatus pill math** — extracted to
   `lib/client-core/devicestatus/loop.js` and covered by
   `tests/client-core/devicestatus-loop.test.js` against captured
-  Loop iOS fixtures (`tests/fixtures/captured/devicestatus.json`).
+  Loop iOS fixtures (`tests/fixtures/captured/loop/devicestatus.json`).
 - **Pump devicestatus latest-pick** — extracted to
   `lib/client-core/devicestatus/pump.js` and covered by
   `tests/client-core/devicestatus-pump.test.js`.
 - **Uploader classification** — new pure helper at
   `lib/client-core/devicestatus/uploader.js` with full branch
   coverage (`tests/client-core/devicestatus-uploader.test.js`).
+
+## Recently Closed (Phase 5d, May 2026)
+
+- **Multi-controller captured fixture library.** Captured fixtures
+  reorganized into per-source subdirectories
+  (`tests/fixtures/captured/{loop,trio,phone-uploader}/`) and
+  extended to cover Trio (oref1) and a phone-uploader-only source
+  (xDrip4iOS). `classifyUploader` is now exercised against real
+  Trio (`openaps` body) and phone-uploader (no algorithm body)
+  records; `selectLoopState` is contract-tested against Trio data
+  to verify it correctly returns the null-shape when no `loop`
+  block is present. Sanitizer (`tools/captured-fixtures/sanitize.js`)
+  gained per-label device pre-filters so that multi-controller
+  patient dumps slice cleanly to a single source.
 
 ## Still Open — devicestatus follow-ups
 
@@ -26,11 +40,17 @@ This document aggregates coverage gaps from all test specifications to provide a
   `moment` and the sandbox `device` map than the Loop equivalent;
   splitting it cleanly requires more refactor than Phase 5c
   scoped. Tracked here so it isn't mistaken for done.
-- **Captured fixture set is Loop iOS only.** OpenAPS / AAPS / Trio /
-  xDrip+ devicestatus payloads are not represented; the
-  `classifyUploader` and `selectLoopState` helpers are only
-  *executed* against synthetic minimal fixtures for those
-  controllers. See `tests/fixtures/captured/README.md`.
+- **AAPS Android captured fixture missing.** Needed: a slice with
+  `device='openaps://AndroidAPS'` (AAPS-on-Android exports — see
+  ODC patients in the `ns-data` corpus). Without it, the
+  `classify` branch that relies on the `aaps://` device-string
+  prefix is exercised only against synthetic input.
+- **xDrip+ Android entries / pebble fields** are not represented
+  in any captured fixture. xDrip4iOS treatments are present
+  (`phone-uploader/`) but xDrip+ Android-specific shape (different
+  uploader, different pebble structure) is a gap.
+- **OpenAPS rig (`openaps://edison`)** — not captured.
+- **Medtronic CareLink uploads** — not captured.
 
 ---
 

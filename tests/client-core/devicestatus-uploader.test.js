@@ -7,7 +7,11 @@ var path = require('path');
 var classify = require('../../lib/client-core/devicestatus/uploader');
 
 var CAPTURED = JSON.parse(fs.readFileSync(
-  path.join(__dirname, '..', 'fixtures', 'captured', 'devicestatus.json'), 'utf8'));
+  path.join(__dirname, '..', 'fixtures', 'captured', 'loop', 'devicestatus.json'), 'utf8'));
+var TRIO = JSON.parse(fs.readFileSync(
+  path.join(__dirname, '..', 'fixtures', 'captured', 'trio', 'devicestatus.json'), 'utf8'));
+var PHONE = JSON.parse(fs.readFileSync(
+  path.join(__dirname, '..', 'fixtures', 'captured', 'phone-uploader', 'devicestatus.json'), 'utf8'));
 
 describe('client-core: devicestatus / uploader (classifyUploader)', function () {
 
@@ -44,6 +48,20 @@ describe('client-core: devicestatus / uploader (classifyUploader)', function () 
     CAPTURED.length.should.be.greaterThan(0);
     CAPTURED.forEach(function (ds, i) {
       classify(ds).should.equal('loop', 'devicestatus[' + i + ']');
+    });
+  });
+
+  it('every Trio captured devicestatus classifies to "openaps"', function () {
+    TRIO.length.should.be.greaterThan(0);
+    TRIO.forEach(function (ds, i) {
+      classify(ds).should.equal('openaps', 'trio devicestatus[' + i + ']');
+    });
+  });
+
+  it('every phone-uploader devicestatus classifies to "unknown" (no body block)', function () {
+    PHONE.length.should.be.greaterThan(0);
+    PHONE.forEach(function (ds, i) {
+      classify(ds).should.equal('unknown', 'phone-uploader devicestatus[' + i + ']');
     });
   });
 });

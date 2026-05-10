@@ -36,12 +36,38 @@ var crypto = require('crypto');
 // any plausible test run so reports/today logic exercises real code.
 var TARGET_LATEST_EPOCH = Date.parse('2026-05-09T00:00:00.000Z');
 
-// Slice sizes (after time-sorted descending).
+// Slice sizes (after time-sorted descending). Per-source overrides
+// are merged at sanitize time so a verbose Trio devicestatus capture
+// (which carries 4× predBGs arrays) doesn't blow the size envelope.
 var SIZE_LIMITS = {
   entries: 288        // ~1 day at 5-min cadence
   , treatments: 100   // representative sample
   , devicestatus: 30  // bounded heavily; each record carries a 60-bin predicted array
   , profile: 10       // typically small; keep all up to 10
+};
+
+// Per-label overrides; merged into SIZE_LIMITS based on the --label
+// arg. Trio devicestatus is ~3KB/record (4× predBG arrays), so we
+// shrink the slice to keep the file under the lint envelope.
+var SIZE_LIMITS_BY_LABEL = {
+  trio: { devicestatus: 20, treatments: 80, entries: 0, profile: 0 }
+  , 'phone-uploader': { devicestatus: 30, treatments: 50, entries: 0, profile: 0 }
+};
+
+// Optional per-label devicestatus prefilter. Used when a single
+// patient's NS export carries records from multiple controllers
+// (e.g. Trio + Loop on the same account); without this the slice
+// step would happily pick the latest 20 — which may all be from
+// the wrong controller.
+var DS_FILTER_BY_LABEL = {
+  trio: function (d) { return d && d.openaps && typeof d.openaps === 'object'; }
+  , 'phone-uploader': function (d) { return d && !d.loop && !d.openaps && !d.pump; }
+};
+
+// Same idea for treatments — pick by enteredBy / device.
+var TX_FILTER_BY_LABEL = {
+  trio: function (t) { return (t && (t.enteredBy === 'Trio' || (t.enteredBy || '').indexOf('Trio') === 0)); }
+  , 'phone-uploader': function (t) { return t && (t.enteredBy || '').indexOf('xDrip') === 0; }
 };
 
 // ---------------------------------------------------------------------------
@@ -125,7 +151,14 @@ function makeShifter (deltaMs) {
 function scrubDeviceString (s) {
   if (!s || typeof s !== 'string') return s;
   return s.replace(/^(Dexcom\s+G[567])\s+\S+/i, '$1 SERIAL')
-    .replace(/^(Libre[^\s]*)\s+\S+/i, '$1 SERIAL');
+    .replace(/^(Libre[^\s]*)\s+\S+/i, '$1 SERIAL')
+    // Phone-model device strings (Sony SO-53B, Pixel 7, etc.) leak
+    // device identity even without a serial; replace with a generic
+    // placeholder. Trio / loop:// / openaps:// are public controller
+    // names and are kept as-is.
+    .replace(/^Sony\s+\S+/i, 'Android Phone')
+    .replace(/^Pixel\s+\S+/i, 'Android Phone')
+    .replace(/^SM-[A-Z0-9]+/i, 'Android Phone');
 }
 
 // Pseudonymize known uploader/device tokens.
@@ -173,7 +206,7 @@ function sanitizeDevicestatus (d, shifter) {
   var out = JSON.parse(JSON.stringify(d));
   delete out._id;
 
-  if (out.device) out.device = scrubEnteredBy(out.device);
+  if (out.device) out.device = scrubDeviceString(scrubEnteredBy(out.device));
   if (out.created_at) out.created_at = shifter.iso(out.created_at);
 
   if (out.pump) {
@@ -297,7 +330,11 @@ function profileMillis (p) {
 // ---------------------------------------------------------------------------
 
 function parseArgs (argv) {
-  var args = { src: '/tmp/ns-pr8447-import', out: 'tests/fixtures/captured' };
+  var args = {
+    src: '/tmp/ns-pr8447-import'
+    , out: 'tests/fixtures/captured/loop'
+    , label: 'loop'
+  };
   for (var i = 2; i < argv.length; i++) {
     var key = argv[i].replace(/^--/, '');
     args[key] = argv[++i];
@@ -306,10 +343,12 @@ function parseArgs (argv) {
 }
 
 function loadJson (file) {
+  if (!fs.existsSync(file)) return [];
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
 function writeFixture (outDir, name, data) {
+  if (!data || data.length === 0) return; // skip empty collections
   fs.mkdirSync(outDir, { recursive: true });
   var file = path.join(outDir, name);
   // Pretty-print with 2-space indent for diff-friendliness.
@@ -318,29 +357,58 @@ function writeFixture (outDir, name, data) {
   console.log('  wrote ' + name + '  (' + data.length + ' records, ' + bytes + ' bytes)');
 }
 
+function effectiveLimits (label) {
+  var overrides = SIZE_LIMITS_BY_LABEL[label] || {}; // eslint-disable-line security/detect-object-injection
+  return Object.assign({}, SIZE_LIMITS, overrides);
+}
+
 function main () {
   var args = parseArgs(process.argv);
-  console.log('sanitizing captures: src=' + args.src + ' out=' + args.out);
+  console.log('sanitizing captures: src=' + args.src + ' out=' + args.out + ' label=' + args.label);
 
   var rawEntries = loadJson(path.join(args.src, 'entries.json'));
   var rawTreatments = loadJson(path.join(args.src, 'treatments.json'));
   var rawDevicestatus = loadJson(path.join(args.src, 'devicestatus.json'));
   var rawProfile = loadJson(path.join(args.src, 'profile.json'));
 
-  var latest = pickLatestMillis(rawEntries);
+  var limits = effectiveLimits(args.label);
+
+  var dsFilter = DS_FILTER_BY_LABEL[args.label]; // eslint-disable-line security/detect-object-injection
+  if (dsFilter) {
+    var preDs = rawDevicestatus.length;
+    rawDevicestatus = rawDevicestatus.filter(dsFilter);
+    console.log('  ds-filter[' + args.label + ']: ' + preDs + ' → ' + rawDevicestatus.length);
+  }
+  var txFilter = TX_FILTER_BY_LABEL[args.label]; // eslint-disable-line security/detect-object-injection
+  if (txFilter) {
+    var preTx = rawTreatments.length;
+    rawTreatments = rawTreatments.filter(txFilter);
+    console.log('  tx-filter[' + args.label + ']: ' + preTx + ' → ' + rawTreatments.length);
+  }
+
+  // Anchor time-shift on whichever collection has the most records.
+  // For phone-uploader / Trio captures, devicestatus is the densest
+  // and tightest source of timestamps.
+  var anchor = rawEntries.length > 0 ? rawEntries
+    : rawDevicestatus.length > 0 ? rawDevicestatus
+    : rawTreatments;
+  var anchorMillis = anchor === rawEntries ? entryMillis
+    : anchor === rawDevicestatus ? dsMillis
+    : treatmentMillis;
+  var latest = anchor.reduce(function (acc, r) { return Math.max(acc, anchorMillis(r) || 0); }, 0);
   var deltaMs = TARGET_LATEST_EPOCH - latest;
   var shifter = makeShifter(deltaMs);
   console.log('  source-latest=' + new Date(latest).toISOString()
               + ' shift-delta=' + (deltaMs / 1000) + 's');
 
-  var entries = sliceByTime(rawEntries, SIZE_LIMITS.entries, entryMillis)
+  var entries = sliceByTime(rawEntries, limits.entries, entryMillis)
     .map(function (e) { return sanitizeEntry(e, shifter); });
-  var treatments = sliceByTimeDiverse(rawTreatments, SIZE_LIMITS.treatments, treatmentMillis,
+  var treatments = sliceByTimeDiverse(rawTreatments, limits.treatments, treatmentMillis,
     function (t) { return t.eventType; })
     .map(function (t) { return sanitizeTreatment(t, shifter); });
-  var devicestatus = sliceByTime(rawDevicestatus, SIZE_LIMITS.devicestatus, dsMillis)
+  var devicestatus = sliceByTime(rawDevicestatus, limits.devicestatus, dsMillis)
     .map(function (d) { return sanitizeDevicestatus(d, shifter); });
-  var profile = sliceByTime(rawProfile, SIZE_LIMITS.profile, profileMillis)
+  var profile = sliceByTime(rawProfile, limits.profile, profileMillis)
     .map(function (p) { return sanitizeProfile(p, shifter); });
 
   writeFixture(args.out, 'entries.json', entries);

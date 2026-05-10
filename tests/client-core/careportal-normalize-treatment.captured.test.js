@@ -35,7 +35,7 @@ var normalize = require('../../lib/client-core/careportal/normalize-treatment');
 var eventTypes = require('../../lib/client-core/careportal/event-types');
 
 var CAPTURED = JSON.parse(fs.readFileSync(
-  path.join(__dirname, '..', 'fixtures', 'captured', 'treatments.json'), 'utf8'));
+  path.join(__dirname, '..', 'fixtures', 'captured', 'loop', 'treatments.json'), 'utf8'));
 
 // Build an inputMatrix from the same source the adapter uses so
 // that reason resolution exercises real configuration.

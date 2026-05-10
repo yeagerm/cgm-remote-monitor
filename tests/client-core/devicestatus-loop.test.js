@@ -8,7 +8,9 @@ var moment = require('moment');
 var selectLoopState = require('../../lib/client-core/devicestatus/loop');
 
 var CAPTURED = JSON.parse(fs.readFileSync(
-  path.join(__dirname, '..', 'fixtures', 'captured', 'devicestatus.json'), 'utf8'));
+  path.join(__dirname, '..', 'fixtures', 'captured', 'loop', 'devicestatus.json'), 'utf8'));
+var TRIO = JSON.parse(fs.readFileSync(
+  path.join(__dirname, '..', 'fixtures', 'captured', 'trio', 'devicestatus.json'), 'utf8'));
 
 // The captured set is anchored so the latest record is at
 // 2026-05-09T00:00:00Z; pick a "now" just past the latest sample
@@ -83,6 +85,15 @@ describe('client-core: devicestatus / loop (selectLoopState)', function () {
         result.lastEnacted.should.have.property('timestamp');
         moment.isMoment(result.lastEnacted.moment).should.be.true();
       }
+    });
+  });
+
+  describe('captured Trio fixtures (no loop block)', function () {
+    it('returns the null-shape because Trio devicestatus has no `loop` body', function () {
+      var clone = JSON.parse(JSON.stringify(TRIO));
+      var r = selectLoopState(clone, RECENT);
+      (r.lastLoop === null).should.be.true();
+      r.display.code.should.equal('warning');
     });
   });
 
