@@ -52,6 +52,7 @@ var SIZE_LIMITS = {
 var SIZE_LIMITS_BY_LABEL = {
   trio: { devicestatus: 20, treatments: 80, entries: 0, profile: 0 }
   , 'phone-uploader': { devicestatus: 30, treatments: 50, entries: 0, profile: 0 }
+  , aaps: { devicestatus: 30, treatments: 80, entries: 0, profile: 0 }
 };
 
 // Optional per-label devicestatus prefilter. Used when a single
@@ -62,12 +63,14 @@ var SIZE_LIMITS_BY_LABEL = {
 var DS_FILTER_BY_LABEL = {
   trio: function (d) { return d && d.openaps && typeof d.openaps === 'object'; }
   , 'phone-uploader': function (d) { return d && !d.loop && !d.openaps && !d.pump; }
+  , aaps: function (d) { return d && (d.device === 'openaps://AndroidAPS' || /^openaps:\/\/.*AndroidAPS/i.test(d.device || '')); }
 };
 
 // Same idea for treatments — pick by enteredBy / device.
 var TX_FILTER_BY_LABEL = {
   trio: function (t) { return (t && (t.enteredBy === 'Trio' || (t.enteredBy || '').indexOf('Trio') === 0)); }
   , 'phone-uploader': function (t) { return t && (t.enteredBy || '').indexOf('xDrip') === 0; }
+  , aaps: function (t) { return t && /AndroidAPS|openaps/i.test((t.enteredBy || '') + ' ' + (t.device || '')); }
 };
 
 // ---------------------------------------------------------------------------

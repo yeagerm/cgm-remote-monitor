@@ -12,6 +12,8 @@ var TRIO = JSON.parse(fs.readFileSync(
   path.join(__dirname, '..', 'fixtures', 'captured', 'trio', 'devicestatus.json'), 'utf8'));
 var PHONE = JSON.parse(fs.readFileSync(
   path.join(__dirname, '..', 'fixtures', 'captured', 'phone-uploader', 'devicestatus.json'), 'utf8'));
+var AAPS = JSON.parse(fs.readFileSync(
+  path.join(__dirname, '..', 'fixtures', 'captured', 'aaps', 'devicestatus.json'), 'utf8'));
 
 describe('client-core: devicestatus / uploader (classifyUploader)', function () {
 
@@ -62,6 +64,14 @@ describe('client-core: devicestatus / uploader (classifyUploader)', function () 
     PHONE.length.should.be.greaterThan(0);
     PHONE.forEach(function (ds, i) {
       classify(ds).should.equal('unknown', 'phone-uploader devicestatus[' + i + ']');
+    });
+  });
+
+  it('every AAPS-Android devicestatus classifies to "openaps"', function () {
+    AAPS.length.should.be.greaterThan(0);
+    AAPS.forEach(function (ds, i) {
+      classify(ds).should.equal('openaps', 'aaps devicestatus[' + i + ']');
+      ds.device.should.equal('openaps://AndroidAPS');
     });
   });
 });

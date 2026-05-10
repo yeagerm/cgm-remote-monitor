@@ -18,6 +18,9 @@ tests/fixtures/captured/
 ├── trio/                # Trio (oref1 algorithm; `device='Trio'`)
 │   ├── treatments.json
 │   └── devicestatus.json
+├── aaps/                # AAPS-Android (`device='openaps://AndroidAPS'`)
+│   ├── treatments.json
+│   └── devicestatus.json
 └── phone-uploader/      # xDrip4iOS-style phone uploader (no Loop/openaps body)
     ├── treatments.json
     └── devicestatus.json
@@ -42,11 +45,11 @@ instance; `trio/` and `phone-uploader/` were sliced from
 |---|---|---|
 | Loop iOS | ✅ | `loop/` |
 | Trio (oref1) | ✅ | `trio/` |
+| AAPS Android (`device='openaps://AndroidAPS'`) | ✅ | `aaps/` |
 | Phone-only uploader (xDrip4iOS) | ✅ | `phone-uploader/` |
-| AAPS Android (`device='openaps://AndroidAPS'`) | ❌ gap | — |
-| OpenAPS rig (`openaps://edison`) | ❌ gap | — |
-| xDrip+ Android entries / pebble fields | ❌ gap | — |
-| Medtronic CareLink uploads | ❌ gap | — |
+| OpenAPS rig (`openaps://edison`) | ❌ gap | — (no source identified) |
+| xDrip+ Android entries / pebble fields | ❌ gap | — (no source identified) |
+| Medtronic CareLink uploads | ❌ gap | — (no source identified) |
 
 **Absence of a controller here is not evidence of test coverage.**
 When new captures land, add them under a new `<source>/` subdir and
@@ -108,6 +111,12 @@ node tools/captured-fixtures/sanitize.js \
 node tools/captured-fixtures/sanitize.js \
   --src externals/ns-data/patients/j/training \
   --out tests/fixtures/captured/phone-uploader --label phone-uploader
+
+# AAPS-Android slice (filters to device=openaps://AndroidAPS)
+# Source: tools/ns2parquet/fixtures/ in the rag-nightscout-ecosystem-alignment workspace.
+node tools/captured-fixtures/sanitize.js \
+  --src /tmp/aaps-raw \
+  --out tests/fixtures/captured/aaps --label aaps
 ```
 
 Source dump must contain whichever of `entries.json`, `treatments.json`,
@@ -124,6 +133,8 @@ treated as empty collections.
 | loop/profile | 10 | Captures legacy → modern migrations and override-preset variety. |
 | trio/devicestatus | 20 | Trio records are ~3 KB each (predBGs arrays). 20 keeps file <100 KB. |
 | trio/treatments | 80 | Mix of Temp Basal, SMB, Bolus, Carb Correction, Site Change. |
+| aaps/devicestatus | 30 | AAPS records are ~3 KB each (openaps.suggested.reason verbose); 30 keeps file <110 KB. |
+| aaps/treatments | 80 | Mix of Temp Basal, SMB, Meal Bolus, Correction Bolus, Temporary Target, BG Check. |
 | phone-uploader/devicestatus | 30 | Records are tiny (no algorithm body); 30 spans enough time for staleness checks. |
 | phone-uploader/treatments | 50 | xDrip4iOS Carbs / Bolus / BG Check only. |
 

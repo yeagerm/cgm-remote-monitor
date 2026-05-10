@@ -33,6 +33,18 @@ This document aggregates coverage gaps from all test specifications to provide a
   gained per-label device pre-filters so that multi-controller
   patient dumps slice cleanly to a single source.
 
+## Recently Closed (Phase 5e, May 2026)
+
+- **AAPS-Android captured fixture added** at
+  `tests/fixtures/captured/aaps/`, sliced from a real
+  `device='openaps://AndroidAPS'` export
+  (`tools/ns2parquet/fixtures/odc_39819048_*.json` in the
+  rag-nightscout-ecosystem-alignment workspace). Carries the
+  full oref0 `openaps.{iob,suggested,enacted}` body and a
+  representative SMB / Temp Basal / Meal Bolus / Temporary
+  Target treatment mix. `classifyUploader` now exercised against
+  real AAPS data (asserts `'openaps'` for every record).
+
 ## Still Open — devicestatus follow-ups
 
 - **OpenAPS pill math** is *not* yet extracted. The `openaps.analyzeData()`
@@ -45,6 +57,7 @@ This document aggregates coverage gaps from all test specifications to provide a
   ODC patients in the `ns-data` corpus). Without it, the
   `classify` branch that relies on the `aaps://` device-string
   prefix is exercised only against synthetic input.
+  → **Closed Phase 5e:** see below.
 - **xDrip+ Android entries / pebble fields** are not represented
   in any captured fixture. xDrip4iOS treatments are present
   (`phone-uploader/`) but xDrip+ Android-specific shape (different

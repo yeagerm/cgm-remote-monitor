@@ -47,6 +47,12 @@ var SOURCES = {
     , devicestatus: { required: true,  maxBytes: 15000 }
     , profile:      { required: false }
   }
+  , aaps: {
+    entries:      { required: false }
+    , treatments:   { required: true,  maxBytes: 30000 }
+    , devicestatus: { required: true,  maxBytes: 110000 }
+    , profile:      { required: false }
+  }
 };
 
 function load (source, name) {
