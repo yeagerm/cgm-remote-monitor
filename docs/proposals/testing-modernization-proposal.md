@@ -1,8 +1,8 @@
 # Testing & Architecture Modernization Proposal
 
-**Document Version:** 1.1  
-**Last Updated:** January 2026  
-**Status:** Draft (2026 Proposal - Revised)  
+**Document Version:** 1.2
+**Last Updated:** May 2026
+**Status:** Tracks 1+2 substantially complete; Track 3 pending
 **Authors:** Nightscout Development Team
 
 ---
@@ -519,9 +519,123 @@ For Track 3 Discovery phase:
 
 ---
 
+## Lessons Learned (Tracks 1+2 retro, May 2026)
+
+These are empirical findings from executing Phases 0–5e that should inform
+remaining work, related proposals, and any future modernization effort.
+
+### L1. Captured-fixture library is the highest-leverage artifact
+
+What started as a Phase-5c implementation detail (`tests/fixtures/captured/`)
+has done more to harden the test suite than any single test or refactor.
+Per-source slices for Loop iOS, Trio (oref1), AAPS-Android, and
+xDrip4iOS phone-uploader, sanitized via `tools/captured-fixtures/sanitize.js`,
+turn `classifyUploader` and `selectLoopState` from "exercises synthetic
+input" into "exercises real-world payload from every controller class
+the ecosystem ships". The pattern should be a first-class section, not
+buried in success-criteria bullets.
+
+**Implication for future work:** any new pure-logic module added to
+`lib/client-core/` should land with at least one captured-fixture golden
+test before being considered done. The sanitizer should grow per-label
+device pre-filters whenever a new uploader class enters the cohort.
+
+### L2. Domain-specific test corpora are non-negotiable for security libs
+
+The `tests/sanitizer-differential.test.js` work (commits `c8d880d1`,
+`61e2e582`) revealed that the popular `xss` library silently truncates
+`"Hypo: BG < 70 needed sugar"` to `"Hypo: BG "` because `<` parses as a
+tag start. Generic benchmarks would have rated `xss` as "smaller, faster,
+no DOM" and missed this entirely. The 30-row diabetes-domain corpus
+caught it on the first run.
+
+**Implication:** before swapping any security-relevant library, run a
+measurement test against a captured corpus drawn from real Nightscout
+free-text fields. Promote `sanitizer-differential.test.js` as the
+template.
+
+### L3. Production tree is now jsdom-free
+
+PR #8517 (sanitize-html replaces dompurify+jsdom) eliminated jsdom from
+`npm ls jsdom --omit=dev`. This was not on the original Track 1
+checklist, but it is now achievable as a tightened exit criterion: jsdom
+should appear only as a dev/test dependency. (The 2.1 MB browser polyfill
+was being loaded on every text scrub for a use case — strip dangerous
+markup from notes — that has no DOM dependency.)
+
+### L4. Render path is already inert; sanitization is defense-in-depth
+
+The same sanitizer work confirmed that Nightscout's actual render paths
+(jQuery `.text()` and EJS `<%= %>`) are inert for raw input. Server-side
+sanitization is therefore defense-in-depth, not the primary control.
+This **lowers the bar for Track 3 framework choice** dramatically: any
+modern framework with safe-by-default templating (React JSX, Svelte,
+Vue) inherits the inert-by-default property automatically.
+
+### L5. jsdom 11 → 24 produces silent semantic drift in bundled code
+
+`docs/proposals/track1/phase1c-shim-parity.txt` documents the
+profile-editor failure under `USE_BENV_SHIM=1`: jsdom 24 returns `null`
+where jsdom 11 returned `""` for some absent attribute, surfacing as a
+`Cannot read properties of null` deep inside the minified bundle's jQuery
+click handler chain. The strategic decision to **retire bundle-coupled
+tests rather than bisect** was vindicated. This is now lived experience
+that backs the broader principle: **testing through a minified bundle
+in a polyfilled DOM is brittle to silent host-environment drift**, and
+that brittleness compounds with every dependency upgrade.
+
+**Implication for the Playwright proposal:** real-browser E2E avoids the
+polyfill-drift class entirely. The trade-off (slower, harder to debug)
+is the right one for the small set of workflows where bundle-level
+wiring matters and per-module pure tests cannot reach.
+
+### L6. Three-legged-stool replaces bundle-driven integration tests
+
+Phase 5c established a successful coverage shape for retired bundle tests
+(`reports.test.js`, `profileeditor.test.js`):
+
+1. **Pure logic** → Node-only `tests/client-core/*` suites (~70 ms).
+2. **Bundle wiring** → `tests/bundle.smoke.test.js` (asserts
+   `window.Nightscout.{client,reportclient,profileclient,units}`).
+3. **End-to-end rendering** → `docs/test-specs/manual-smoke-checklist.md`.
+
+The unautomated layer (3) is where a future Playwright suite belongs —
+and only there. This bounding is the right way to size any browser-E2E
+investment: a small enumerated workflow set, not a sprawling
+"replace all UI tests" effort.
+
+### L7. Bundler hygiene problems surface during modernization
+
+Commit `fc9008c2` ("prevent prod↔dev .map asset collisions") found a
+real cross-mode webpack bug while doing the modernization. Such hygiene
+findings are cheap to fix in-flight; future modernization phases should
+include an explicit "look for asset collisions / cross-mode bleed"
+review item.
+
+### L8. Boot-amortization is an under-used test-perf lever
+
+`api.shape-handling.test.js` saved ~60–80s of wall time per run by
+moving server boot from `beforeEach()` to `before()` (one boot, not
+26). The same pattern almost certainly applies to other API suites.
+This is a follow-up worth a sweep: any test file with N tests and a
+~2–3s server boot should be inspected for the same anti-pattern.
+
+### L9. Statistics API has become a precondition for Track 3
+
+`reports.test.js` was retired with the explicit assumption "stats moving
+to server API". This means the statistics-API design (currently a
+proposal in `rag-nightscout-ecosystem-alignment/docs/sdqctl-proposals/
+statistics-api-proposal.md`) is no longer optional — it is **blocking**
+any new UI shell from re-implementing stats client-side, which would
+re-import the legacy code path we just retired. Track 3 framework
+discovery should not start until the stats-API contract exists.
+
+---
+
 ## Revision History
 
 | Date | Version | Changes |
 |------|---------|---------|
 | Jan 2026 | 1.0 | Initial draft |
 | Jan 2026 | 2.0 | Revised based on stakeholder interviews; three-track approach; added Logic/DOM separation; added UI Discovery track; added network isolation requirements; added scope guardrails |
+| May 2026 | 1.2 | Added Lessons Learned section (L1–L9) capturing empirical findings from Phases 0–5e: captured-fixture library leverage, domain corpus principle, jsdom-free production tree, render-path inertia, jsdom semantic drift, three-legged-stool pattern, bundler hygiene, boot-amortization, statistics-API as Track 3 precondition. |

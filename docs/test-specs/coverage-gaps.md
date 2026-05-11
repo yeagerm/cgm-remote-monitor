@@ -182,6 +182,75 @@ gap and tie it to the stats API work.
 
 ---
 
+## Cross-repo classifier — single-source-of-truth question (May 2026)
+
+`classifyUploader` in `lib/client-core/devicestatus/uploader.js` and
+`_detect_controller` in
+`rag-nightscout-ecosystem-alignment/tools/ns2parquet/normalize.py`
+independently classify the same wire signal (uploader/device strings).
+Both have to test `aaps`/`androidaps` *before* `openaps` substring or
+AAPS-Android exports get mis-classified as legacy OpenAPS rigs. The
+captured-fixture library (`tests/fixtures/captured/aaps/`) now exercises
+the cgm-remote-monitor side; the rag-repo's parquet pipeline has its own
+test coverage. **There is no shared specification** — a fix in one repo
+cannot mechanically propagate to the other.
+
+**Action item (not blocking, but worth a decision):** publish the
+classification rule set as a small JSON spec under
+`rag-nightscout-ecosystem-alignment/mapping/cross-project/` and have
+both implementations consume it (or at minimum, both unit-test
+themselves against the same fixture). Decide before adding the next
+uploader class.
+
+---
+
+## Pill-output goldens against captured fixtures (May 2026)
+
+**Status:** ✅ landed at `tests/client-core/pill-goldens.test.js`.
+
+For each captured-fixture source under `tests/fixtures/captured/<source>/`,
+the harness instantiates every pill-emitting plugin in `lib/plugins/`
+(rawbg, iob, cob, direction, upbat, basal, delta, cage, iage, sage,
+bage, bwp, loop, openaps, override, pump, timeago, dbsize, …),
+drives it through `sandbox.clientInit → setProperties → updateVisualisation`,
+and asserts the captured `pluginBase.updatePillText` call sequence
+matches `tests/fixtures/captured/<source>/pills-golden.json`.
+
+**Why it matters:**
+
+- Locks the *user-visible* output of the entire plugin chain (sandbox
+  → property pipeline → plugin formatting → unit conversion → language
+  selection) against four real-world payload shapes (Loop, Trio, AAPS,
+  phone-uploader) without a browser, jsdom, or any new runtime
+  dependency.
+- Provides the safety net contemplated in **L4** (jsdom semantic drift)
+  and **L1** (captured-fixture leverage) of the testing-modernization
+  proposal.
+- Gives us a regression net **before** the statistics-API extraction
+  (proposed in `rag-nightscout-ecosystem-alignment/docs/sdqctl-proposals/statistics-api-proposal.md`),
+  which is the next refactor that will touch the data pipeline these
+  pills depend on.
+
+**To intentionally update goldens after a behavior change:**
+
+```bash
+node tools/captured-fixtures/generate-pill-goldens.js --write
+git diff tests/fixtures/captured/    # review every difference
+```
+
+**Determinism:** `time` is pinned to the newest mills across
+sgvs ∪ treatments ∪ devicestatus, not wall-clock. Plugins that derive
+"x weeks ago" output from old fixture timestamps will look stale —
+that's expected and visible in the golden, and any drift away from
+that staleness is what we want to detect.
+
+**Known caveat:** the COB plugin emits a benign console warning
+("treatment profile" missing) for fixtures that lack `profile.json`
+(currently `aaps`, `phone-uploader`, `trio`); the warning does not
+affect the captured pill output.
+
+---
+
 ## Cross-References
 
 - [Shape Handling Tests](shape-handling-tests.md)
