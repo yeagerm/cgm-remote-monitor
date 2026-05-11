@@ -1,0 +1,215 @@
+{
+  "fixture": "trio",
+  "time": 1778010604128,
+  "pills": {
+    "rawbg": [
+      {
+        "hide": true
+      }
+    ],
+    "iob": [
+      {
+        "info": [
+          {
+            "label": "Basal IOB",
+            "value": "-2.36"
+          },
+          {
+            "label": "Source",
+            "value": "OpenAPS"
+          },
+          {
+            "label": "Device",
+            "value": "Trio"
+          }
+        ],
+        "label": "IOB",
+        "value": "-2.36U"
+      }
+    ],
+    "direction": [
+      {
+        "hide": true
+      }
+    ],
+    "upbat": [
+      {
+        "hide": false,
+        "info": null,
+        "labelClass": "icon-battery-100",
+        "pillClass": "current",
+        "value": "95%"
+      }
+    ],
+    "delta": [
+      {
+        "info": null,
+        "label": "mg/dl"
+      }
+    ],
+    "cage": [
+      {
+        "info": [
+          {
+            "label": "Inserted",
+            "value": "12/31/1969, 4:00:00 PM"
+          }
+        ],
+        "label": "CAGE",
+        "pillClass": null,
+        "value": "n/a "
+      }
+    ],
+    "iage": [
+      {
+        "info": [
+          {
+            "label": "Changed",
+            "value": "12/31/1969, 4:00:00 PM"
+          }
+        ],
+        "label": "IAGE",
+        "pillClass": null
+      }
+    ],
+    "sage": [
+      {
+        "info": [],
+        "label": "SAGE",
+        "pillClass": null
+      }
+    ],
+    "bage": [
+      {
+        "info": [
+          {
+            "label": "Inserted",
+            "value": "12/31/1969, 4:00:00 PM"
+          }
+        ],
+        "label": "BAGE",
+        "pillClass": null,
+        "value": "n/a "
+      }
+    ],
+    "bwp": [
+      {
+        "info": [
+          {
+            "label": "Notice",
+            "value": "required info missing"
+          },
+          {
+            "label": "  • ",
+            "value": "Missing need a treatment profile"
+          },
+          {
+            "label": "  • ",
+            "value": "Data isn't current"
+          }
+        ],
+        "label": "BWP",
+        "value": "0U"
+      }
+    ],
+    "loop": [
+      {
+        "info": [],
+        "label": "Loop ⚠",
+        "pillClass": "current",
+        "value": null
+      }
+    ],
+    "openaps": [
+      {
+        "info": [
+          {
+            "label": "1m ago",
+            "value": "Trio ◉ Waiting"
+          },
+          {
+            "label": "ago",
+            "value": "BG: 93, Autosens ratio: 1, ISF: 100→100, COB: 0, Dev: -75, BGI: 9, CR: 10.5, Target: 150, minPredBG 207, minGuardBG 98, IOBpredBG 294, TDD: 34.9 U; IOB -2.362 &lt; -0.28 and minDelta 5 &gt; expectedDelta 5; Eventual BG 254 &gt;= 150, no temp, setting 2U/hr. , <b>Sensitivity Ratio:</b> 1, IOB: -2.37U, Basal IOB -2.37U"
+          }
+        ],
+        "label": "OpenAPS ⚠",
+        "pillClass": "urgent",
+        "value": "ago"
+      }
+    ],
+    "override": [
+      {
+        "hide": true,
+        "info": [],
+        "label": "",
+        "value": ""
+      }
+    ],
+    "pump": [
+      {
+        "info": [
+          {
+            "label": "Last Clock",
+            "value": "1m ago"
+          },
+          {
+            "label": "Status",
+            "value": "normal"
+          },
+          {
+            "label": "Device",
+            "value": "Trio"
+          }
+        ],
+        "label": "Pump",
+        "pillClass": "current",
+        "value": ""
+      }
+    ],
+    "timeago": [
+      {
+        "label": "time ago",
+        "pillClass": "current"
+      }
+    ],
+    "dbsize": [
+      {
+        "hide": true,
+        "info": [
+          {
+            "label": "Data size",
+            "value": "0 MiB of 496 MiB (0%)"
+          }
+        ],
+        "labelClass": "plugicon-database",
+        "pillClass": "current",
+        "value": "0%"
+      }
+    ]
+  },
+  "forecastSummary": [
+    {
+      "count": 0,
+      "first": null,
+      "last": null
+    },
+    {
+      "count": 96,
+      "first": {
+        "mgdl": 93,
+        "color": "#1e88e5",
+        "mills": 1774799351906,
+        "noFade": true,
+        "forecastType": "IOB"
+      },
+      "last": {
+        "mgdl": 401,
+        "color": "#00d2d2",
+        "mills": 1774813453017,
+        "noFade": true,
+        "forecastType": "Zero-Temp"
+      }
+    }
+  ],
+  "errors": {}
+}
