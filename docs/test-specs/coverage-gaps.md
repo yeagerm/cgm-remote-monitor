@@ -33,6 +33,20 @@ This document aggregates coverage gaps from all test specifications to provide a
   gained per-label device pre-filters so that multi-controller
   patient dumps slice cleanly to a single source.
 
+## Recently Closed (Phase 5f, May 2026)
+
+- **OpenAPS pill math** extracted to
+  `lib/client-core/devicestatus/openaps.js` (`selectOpenAPSState`)
+  and covered by `tests/client-core/devicestatus-openaps.test.js`
+  against the captured AAPS-Android, Trio (oref1), and Loop iOS
+  (negative-control: no `openaps` body) fixtures. Plugin
+  `lib/plugins/openaps.js` now delegates from `analyzeData()` to the
+  pure module, mirroring the loop/pump/uploader pattern from Phase
+  5c. Behaviour preserved exactly (legacy `tests/openaps.test.js`
+  still green; `pills-golden.json` for all four captured sources
+  unchanged). Closes the only "still open" devicestatus follow-up
+  this PR's earlier phases had created.
+
 ## Recently Closed (Phase 5e, May 2026)
 
 - **AAPS-Android captured fixture added** at
@@ -47,17 +61,8 @@ This document aggregates coverage gaps from all test specifications to provide a
 
 ## Still Open — devicestatus follow-ups
 
-- **OpenAPS pill math** is *not* yet extracted. The `openaps.analyzeData()`
-  reduction in `lib/plugins/openaps.js` is more tightly coupled to
-  `moment` and the sandbox `device` map than the Loop equivalent;
-  splitting it cleanly requires more refactor than Phase 5c
-  scoped. Tracked here so it isn't mistaken for done.
-- **AAPS Android captured fixture missing.** Needed: a slice with
-  `device='openaps://AndroidAPS'` (AAPS-on-Android exports — see
-  ODC patients in the `ns-data` corpus). Without it, the
-  `classify` branch that relies on the `aaps://` device-string
-  prefix is exercised only against synthetic input.
-  → **Closed Phase 5e:** see below.
+- **OpenAPS pill math** extracted in Phase 5f — see "Recently Closed"
+  above. Earlier "still open" notes preserved below for traceability.
 - **xDrip+ Android entries / pebble fields** are not represented
   in any captured fixture. xDrip4iOS treatments are present
   (`phone-uploader/`) but xDrip+ Android-specific shape (different

@@ -419,9 +419,14 @@ Note: `benv` removed; direct jsdom usage with secure harness.
   (`npm run test:core`, ~70 ms)
 - [x] Phase 5c: devicestatus pill math extracted to
   `lib/client-core/devicestatus/{uploader,loop,pump}.js`. Plugins
-  `lib/plugins/{loop,pump}.js` delegate to the pure modules; OpenAPS
-  pill extraction is deferred (still has tight `moment`/sandbox
-  coupling — tracked in `coverage-gaps.md`).
+  `lib/plugins/{loop,pump}.js` delegate to the pure modules.
+  **Phase 5f (May 2026)** completes the matrix: OpenAPS pill math
+  extracted to `lib/client-core/devicestatus/openaps.js`
+  (`selectOpenAPSState`); plugin `lib/plugins/openaps.js`
+  delegates from `analyzeData()`. Captured-fixture goldens for
+  all four sources (`aaps`, `loop`, `trio`, `phone-uploader`) are
+  byte-identical pre/post extraction (verified via
+  `node tools/captured-fixtures/generate-pill-goldens.js`).
 - [x] Captured-fixture library at `tests/fixtures/captured/`
   (sanitized real Loop iOS data, regenerable via
   `tools/captured-fixtures/sanitize.js`); golden tests for
@@ -639,3 +644,4 @@ discovery should not start until the stats-API contract exists.
 | Jan 2026 | 1.0 | Initial draft |
 | Jan 2026 | 2.0 | Revised based on stakeholder interviews; three-track approach; added Logic/DOM separation; added UI Discovery track; added network isolation requirements; added scope guardrails |
 | May 2026 | 1.2 | Added Lessons Learned section (L1–L9) capturing empirical findings from Phases 0–5e: captured-fixture library leverage, domain corpus principle, jsdom-free production tree, render-path inertia, jsdom semantic drift, three-legged-stool pattern, bundler hygiene, boot-amortization, statistics-API as Track 3 precondition. |
+| May 2026 | 1.3 | Phase 5f: extracted OpenAPS pill math to `lib/client-core/devicestatus/openaps.js`; closes the last devicestatus pure-logic gap. Pill-output goldens (aaps/loop/trio/phone-uploader) byte-identical pre/post — extraction verified end-to-end. |
