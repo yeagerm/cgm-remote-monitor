@@ -1,6 +1,6 @@
 {
   "fixture": "aaps",
-  "time": 1778284804388,
+  "time": 1778284864388,
   "pills": {
     "rawbg": [
       {
@@ -12,7 +12,7 @@
         "info": [
           {
             "label": "Basal IOB",
-            "value": "0.27"
+            "value": "0.44"
           },
           {
             "label": "Source",
@@ -28,11 +28,11 @@
           },
           {
             "label": "Careportal IOB",
-            "value": "0.23"
+            "value": "0.22"
           }
         ],
         "label": "IOB",
-        "value": "1.43U"
+        "value": "1.50U"
       }
     ],
     "direction": [

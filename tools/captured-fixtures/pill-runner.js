@@ -19,9 +19,15 @@
  *   plugin chain (sandbox, properties, formatting, units, language).
  *
  * Determinism notes:
- *   - sandbox.clientInit takes a `time` argument; we pin it to the
- *     newest mills across (sgvs ∪ treatments ∪ devicestatus) so output
- *     does not depend on wall-clock.
+ *   - sandbox.clientInit takes a `time` argument; we pin it to
+ *     max(mills) + 60_000ms (one minute after the latest captured record)
+ *     across (sgvs ∪ treatments ∪ devicestatus) so output does not depend
+ *     on wall-clock. This matches the convention in
+ *     tests/client-core/devicestatus-openaps.test.js. The +60s keeps
+ *     "now" strictly outside the most recent record so timeago and
+ *     recent-window plugins do not sit on a boundary. Any future anchor
+ *     change requires `node tools/captured-fixtures/generate-pill-goldens.js
+ *     --write` and review of the resulting drift.
  *   - Plugin output order is the order in PILL_PLUGINS below.
  *   - Floats are JSON-serialized as-is; if a future change introduces
  *     non-determinism (Date.now(), Math.random(), iteration order),
@@ -95,7 +101,7 @@ function pickTime ({ sgvs, treatments, devicestatus }) {
     }
   }
   // Fall back to a fixed deterministic instant if nothing has timestamps.
-  return max || Date.UTC(2026, 4, 9, 0, 0, 0);
+  return max ? max + 60_000 : Date.UTC(2026, 4, 9, 0, 0, 0);
 }
 
 function buildCtx (profileRecords) {
