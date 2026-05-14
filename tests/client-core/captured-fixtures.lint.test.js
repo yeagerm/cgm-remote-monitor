@@ -71,6 +71,44 @@ var BANNED_TOKENS = [
   , 'Sony SO-53B'          // phone-uploader device → 'Android Phone'
 ];
 
+var SUSPICIOUS_PATTERNS = [
+  { name: 'long-uppercase-alnum', re: /\b[A-Z][A-Z0-9]{6,}\b/g }
+  , { name: 'long-numeric-id', re: /\b\d{8,}\b/g }
+];
+
+var ALLOW_LIST = [
+  'SERIAL'           // sanitizer placeholder (tools/captured-fixtures/sanitize.js)
+  , 'AndroidAPS'     // legitimate AAPS device label
+  , 'Trio'           // legitimate uploader label
+  , 'OpenAPS'        // legitimate label
+  , 'Loop'           // legitimate label
+  , '2026030500'     // Loop app fixture build/version number, not a device identifier
+  , '3735928559'     // Trio reservoir sentinel (0xDEADBEEF), not a device identifier
+];
+
+function isUuidFragment (raw, index, match) {
+  var start = index;
+  var end = index + match.length;
+  while (start > 0 && /[A-F0-9-]/.test(raw[start - 1])) start--;
+  while (end < raw.length && /[A-F0-9-]/.test(raw[end])) end++;
+  return /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/.test(raw.slice(start, end));
+}
+
+function isDecimalTail (raw, index, match) {
+  return raw[index - 1] === '.' || raw[index + match.length] === '.';
+}
+
+function isAllowed (match, raw, index) {
+  if (/^[0-9a-f]{24}$/.test(match)) return true;
+  if (/^\d{13,}$/.test(match) && (match[0] === '1' || match[0] === '2')) return true;
+  if (isUuidFragment(raw, index, match)) return true;
+  if (/^\d+$/.test(match) && isDecimalTail(raw, index, match)) return true;
+  for (var i = 0; i < ALLOW_LIST.length; i++) {
+    if (match.indexOf(ALLOW_LIST[i]) !== -1) return true;
+  }
+  return false;
+}
+
 describe('captured fixtures lint', function () {
 
   Object.keys(SOURCES).forEach(function (source) {
@@ -96,6 +134,20 @@ describe('captured fixtures lint', function () {
           var raw = fs.readFileSync(file, 'utf8');
           BANNED_TOKENS.forEach(function (tok) {
             raw.indexOf(tok).should.equal(-1, 'banned token "' + tok + '" in ' + source + '/' + name);
+          });
+        });
+
+        it(name + ' contains no unrecognized suspicious PII shapes', function () {
+          var raw = fs.readFileSync(file, 'utf8');
+          SUSPICIOUS_PATTERNS.forEach(function (pattern) {
+            var match;
+            pattern.re.lastIndex = 0;
+            while ((match = pattern.re.exec(raw)) !== null) {
+              isAllowed(match[0], raw, match.index).should.equal(
+                true,
+                'suspicious ' + pattern.name + ' "' + match[0] + '" in ' + source + '/' + name
+              );
+            }
           });
         });
 
