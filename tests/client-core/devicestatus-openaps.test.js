@@ -85,6 +85,119 @@ describe('client-core: devicestatus / openaps (selectOpenAPSState)', function ()
     });
   });
 
+  describe('mutation contract', function () {
+
+    it('grafts enacted.moment onto the input enacted object', function () {
+      var ts = '2026-05-09T00:00:00Z';
+      var enacted = { timestamp: ts, received: true, eventualBG: 105 };
+      var status = {
+        mills: Date.parse(ts)
+        , device: 'openaps://test'
+        , openaps: { enacted: enacted }
+      };
+      var recent = moment(Date.parse(ts)).subtract(15, 'minutes');
+      var r = selectOpenAPSState([status], recent);
+      r.lastEnacted.should.equal(enacted);
+      moment.isMoment(enacted.moment).should.be.true();
+    });
+
+    it('grafts suggested.moment onto the input suggested object', function () {
+      var ts = '2026-05-09T00:00:00Z';
+      var suggested = { timestamp: ts, eventualBG: 110 };
+      var status = {
+        mills: Date.parse(ts)
+        , device: 'openaps://test'
+        , openaps: { suggested: suggested }
+      };
+      var recent = moment(Date.parse(ts)).subtract(15, 'minutes');
+      var r = selectOpenAPSState([status], recent);
+      r.lastSuggested.should.equal(suggested);
+      moment.isMoment(suggested.moment).should.be.true();
+    });
+
+    it('grafts mmtune.moment when status.mmtune.timestamp is present', function () {
+      var ts = '2026-05-09T00:00:00Z';
+      var mmtune = { timestamp: ts, bg: 110 };
+      var status = {
+        mills: Date.parse(ts)
+        , device: 'openaps://test'
+        , openaps: { suggested: { timestamp: ts, eventualBG: 110 } }
+        , mmtune: mmtune
+      };
+      var recent = moment(Date.parse(ts)).subtract(15, 'minutes');
+      var r = selectOpenAPSState([status], recent);
+      r.seenDevices['openaps://test'].mmtune.should.equal(mmtune);
+      moment.isMoment(mmtune.moment).should.be.true();
+    });
+
+    it('collapses status.openaps.iob array to first element and back-fills .timestamp from .time', function () {
+      var ts = '2026-05-09T00:00:00Z';
+      var first = { iob: 1.5, time: ts };
+      var status = {
+        mills: Date.parse(ts)
+        , device: 'openaps://test'
+        , openaps: { iob: [first, { iob: 0, time: ts }] }
+      };
+      var recent = moment(Date.parse(ts)).subtract(15, 'minutes');
+      var r = selectOpenAPSState([status], recent);
+      status.openaps.iob.should.equal(first);
+      status.openaps.iob.timestamp.should.equal(ts);
+      r.lastIOB.should.equal(first);
+    });
+  });
+
+  describe('predBGs and mmtune selection', function () {
+
+    it('uses an enacted.predBGs bare Array as lastPredBGs.values and stamps a moment', function () {
+      var ts = '2026-05-09T00:00:00Z';
+      var predBGs = [100, 101, 102];
+      var status = {
+        mills: Date.parse(ts)
+        , device: 'openaps://test'
+        , openaps: { enacted: { timestamp: ts, received: true, eventualBG: 105, predBGs: predBGs } }
+      };
+      var recent = moment(Date.parse(ts)).subtract(15, 'minutes');
+      var r = selectOpenAPSState([status], recent);
+      r.lastPredBGs.values.should.equal(predBGs);
+      moment.isMoment(r.lastPredBGs.moment).should.be.true();
+    });
+
+    it('lets newer suggested.predBGs supersede enacted.predBGs', function () {
+      var enactedTs = '2026-05-09T00:00:00Z';
+      var suggestedTs = '2026-05-09T00:02:00Z';
+      var enactedPredBGs = [100, 101];
+      var suggestedPredBGs = [120, 121];
+      var status = {
+        mills: Date.parse(suggestedTs)
+        , device: 'openaps://test'
+        , openaps: {
+          enacted: { timestamp: enactedTs, received: true, eventualBG: 105, predBGs: enactedPredBGs }
+          , suggested: { timestamp: suggestedTs, eventualBG: 120, predBGs: suggestedPredBGs }
+        }
+      };
+      var recent = moment(Date.parse(suggestedTs)).subtract(15, 'minutes');
+      var r = selectOpenAPSState([status], recent);
+      r.lastPredBGs.values.should.equal(suggestedPredBGs);
+      r.lastPredBGs.moment.toISOString().should.equal(moment(suggestedTs).toISOString());
+    });
+
+    it('populates seenDevices[uri].mmtune and stamps mmtune.moment', function () {
+      var ts = '2026-05-09T00:00:00Z';
+      var uri = 'openaps://test';
+      var mmtune = { timestamp: ts, bg: 110 };
+      var status = {
+        mills: Date.parse(ts)
+        , device: uri
+        , openaps: { suggested: { timestamp: ts, eventualBG: 110 } }
+        , mmtune: mmtune
+      };
+      var recent = moment(Date.parse(ts)).subtract(15, 'minutes');
+      var r = selectOpenAPSState([status], recent);
+      r.seenDevices[uri].mmtune.should.equal(mmtune);
+      moment.isMoment(r.seenDevices[uri].mmtune.moment).should.be.true();
+    });
+  });
+
   describe('captured AAPS-Android fixtures (full openaps body)', function () {
 
     var result;
@@ -193,6 +306,23 @@ describe('client-core: devicestatus / openaps (selectOpenAPSState)', function ()
       var recent = moment(NOW).subtract(15, 'minutes');
       var r = selectOpenAPSState(statuses, recent);
       r.status.code.should.equal('looping');
+    });
+
+    it('fresh notEnacted after fresh enacted → notenacted', function () {
+      var enactedTs = moment(NOW).subtract(4, 'minutes').toISOString();
+      var notEnactedTs = moment(NOW).subtract(2, 'minutes').toISOString();
+      var statuses = [{
+        mills: NOW - 4 * 60000
+        , device: 'openaps://test'
+        , openaps: { enacted: { timestamp: enactedTs, received: true, rate: 0.5, duration: 30 } }
+      }, {
+        mills: NOW - 2 * 60000
+        , device: 'openaps://test'
+        , openaps: { enacted: { timestamp: notEnactedTs, rate: 0.5, duration: 30 } }
+      }];
+      var recent = moment(NOW).subtract(15, 'minutes');
+      var r = selectOpenAPSState(statuses, recent);
+      r.status.code.should.equal('notenacted');
     });
 
     it('stale data (outside recent window, no enacted/suggested fresh) → warning', function () {

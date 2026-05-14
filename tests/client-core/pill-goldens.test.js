@@ -47,7 +47,9 @@ describe('captured-fixture pill goldens', function () {
           );
         }
         const expected = fs.readFileSync(goldenPath, 'utf8');
-        const actual = stableStringify(captureRun(sourceDir));
+        const result = captureRun(sourceDir);
+        result.errors.should.deepEqual({}, 'unexpected plugin errors during capture: ' + JSON.stringify(result.errors));
+        const actual = stableStringify(result);
         if (actual !== expected) {
           // Fail with a hint for how to refresh; keep diff short.
           const aLines = actual.split('\n');
