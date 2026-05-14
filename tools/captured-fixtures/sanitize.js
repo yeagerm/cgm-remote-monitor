@@ -50,7 +50,7 @@ var SIZE_LIMITS = {
 // arg. Trio devicestatus is ~3KB/record (4× predBG arrays), so we
 // shrink the slice to keep the file under the lint envelope.
 var SIZE_LIMITS_BY_LABEL = {
-  trio: { devicestatus: 20, treatments: 80, entries: 0, profile: 0 }
+  trio: { devicestatus: 10, treatments: 80, entries: 0, profile: 0 }
   , 'phone-uploader': { devicestatus: 30, treatments: 50, entries: 0, profile: 0 }
   , aaps: { devicestatus: 30, treatments: 80, entries: 0, profile: 0 }
 };
@@ -64,6 +64,20 @@ var DS_FILTER_BY_LABEL = {
   trio: function (d) { return d && d.openaps && typeof d.openaps === 'object'; }
   , 'phone-uploader': function (d) { return d && !d.loop && !d.openaps && !d.pump; }
   , aaps: function (d) { return d && (d.device === 'openaps://AndroidAPS' || /^openaps:\/\/.*AndroidAPS/i.test(d.device || '')); }
+};
+
+// Per-label devicestatus key extractor for sliceByTimeDiverse. When
+// set, the slice is keyed on this function so rare branches (e.g.
+// enacted+received vs suggested-only) are guaranteed to appear at
+// least once in the captured slice. Without this, a "latest 20"
+// pure-time slice can omit branch shapes the consuming module
+// needs to exercise.
+var DS_KEY_BY_LABEL = {
+  trio: function (d) {
+    var e = d && d.openaps && d.openaps.enacted;
+    var hasReceived = e && e.timestamp && (e.received || e.recieved);
+    return hasReceived ? 'enacted+received' : 'suggested-only';
+  }
 };
 
 // Same idea for treatments — pick by enteredBy / device.
@@ -221,6 +235,30 @@ function sanitizeDevicestatus (d, shifter) {
     if (out.uploader.timestamp) out.uploader.timestamp = shifter.iso(out.uploader.timestamp);
   }
   if (out.override && out.override.timestamp) out.override.timestamp = shifter.iso(out.override.timestamp);
+  if (out.openaps) {
+    // Shift inner openaps timestamps so the "recent" window logic in
+    // selectOpenAPSState (lastEnacted vs status='enacted') stays
+    // testable against the time-anchored fixture. Without this, the
+    // outer created_at lands at 2026-05-09 while inner enacted.timestamp
+    // remains in the original capture window — pushing every record
+    // outside `recent` and forcing status code 'warning'.
+    ['enacted', 'suggested'].forEach(function (k) {
+      var blk = out.openaps[k]; // eslint-disable-line security/detect-object-injection
+      if (blk && typeof blk === 'object') {
+        if (blk.timestamp) blk.timestamp = shifter.iso(blk.timestamp);
+        if (blk.deliverAt) blk.deliverAt = shifter.iso(blk.deliverAt);
+      }
+    });
+    if (out.openaps.iob && out.openaps.iob.time) {
+      out.openaps.iob.time = shifter.iso(out.openaps.iob.time);
+      if (out.openaps.iob.iobWithZeroTemp && out.openaps.iob.iobWithZeroTemp.time) {
+        out.openaps.iob.iobWithZeroTemp.time = shifter.iso(out.openaps.iob.iobWithZeroTemp.time);
+      }
+    }
+    if (out.openaps.mmtune && out.openaps.mmtune.timestamp) {
+      out.openaps.mmtune.timestamp = shifter.iso(out.openaps.mmtune.timestamp);
+    }
+  }
   if (out.loop) {
     if (out.loop.name) out.loop.name = 'TestLoop';
     if (out.loop.timestamp) out.loop.timestamp = shifter.iso(out.loop.timestamp);
@@ -409,7 +447,9 @@ function main () {
   var treatments = sliceByTimeDiverse(rawTreatments, limits.treatments, treatmentMillis,
     function (t) { return t.eventType; })
     .map(function (t) { return sanitizeTreatment(t, shifter); });
-  var devicestatus = sliceByTime(rawDevicestatus, limits.devicestatus, dsMillis)
+  var devicestatus = (DS_KEY_BY_LABEL[args.label] // eslint-disable-line security/detect-object-injection
+    ? sliceByTimeDiverse(rawDevicestatus, limits.devicestatus, dsMillis, DS_KEY_BY_LABEL[args.label]) // eslint-disable-line security/detect-object-injection
+    : sliceByTime(rawDevicestatus, limits.devicestatus, dsMillis))
     .map(function (d) { return sanitizeDevicestatus(d, shifter); });
   var profile = sliceByTime(rawProfile, limits.profile, profileMillis)
     .map(function (p) { return sanitizeProfile(p, shifter); });

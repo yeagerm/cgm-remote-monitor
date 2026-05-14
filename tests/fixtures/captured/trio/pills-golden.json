@@ -1,6 +1,6 @@
 {
   "fixture": "trio",
-  "time": 1778010664128,
+  "time": 1778284860000,
   "pills": {
     "rawbg": [
       {
@@ -12,7 +12,7 @@
         "info": [
           {
             "label": "Basal IOB",
-            "value": "-2.36"
+            "value": "-2.22"
           },
           {
             "label": "Source",
@@ -21,10 +21,18 @@
           {
             "label": "Device",
             "value": "Trio"
+          },
+          {
+            "label": "------------",
+            "value": ""
+          },
+          {
+            "label": "Careportal IOB",
+            "value": "2.93"
           }
         ],
         "label": "IOB",
-        "value": "-2.36U"
+        "value": "2.78U"
       }
     ],
     "direction": [
@@ -36,9 +44,9 @@
       {
         "hide": false,
         "info": null,
-        "labelClass": "icon-battery-100",
+        "labelClass": "icon-battery-75",
         "pillClass": "current",
-        "value": "95%"
+        "value": "60%"
       }
     ],
     "delta": [
@@ -125,16 +133,16 @@
         "info": [
           {
             "label": "1m ago",
-            "value": "Trio ◉ Waiting"
+            "value": "Trio ⌁ Enacted"
           },
           {
-            "label": "ago",
-            "value": "BG: 93, Autosens ratio: 1, ISF: 100→100, COB: 0, Dev: -75, BGI: 9, CR: 10.5, Target: 150, minPredBG 207, minGuardBG 98, IOBpredBG 294, TDD: 34.9 U; IOB -2.362 &lt; -0.28 and minDelta 5 &gt; expectedDelta 5; Eventual BG 254 &gt;= 150, no temp, setting 2U/hr. , <b>Sensitivity Ratio:</b> 1, IOB: -2.37U, Basal IOB -2.37U"
+            "label": "1m ago",
+            "value": "BG: 156, <b>Temp Basal Canceled</b>, Autosens ratio: 1.17, ISF: 100→86, COB: 61, Dev: 71, BGI: -8, CR: 11, Target: 150, minPredBG 169, minGuardBG 65, IOBpredBG 39, COBpredBG 403, UAMpredBG 39, TDD: 46.8 U; minGuardBG 65&lt;95 84m left and 0 ~ req 0U/hr: no temp required, IOB: 2.77U, Basal IOB -2.22U, Bolus IOB 4.99U"
           }
         ],
-        "label": "OpenAPS ⚠",
-        "pillClass": "urgent",
-        "value": "ago"
+        "label": "OpenAPS ⌁",
+        "pillClass": "current",
+        "value": "1m ago"
       }
     ],
     "override": [
@@ -148,6 +156,10 @@
     "pump": [
       {
         "info": [
+          {
+            "label": "Battery",
+            "value": "100%"
+          },
           {
             "label": "Last Clock",
             "value": "1m ago"
@@ -163,7 +175,7 @@
         ],
         "label": "Pump",
         "pillClass": "current",
-        "value": ""
+        "value": "18.6U"
       }
     ],
     "timeago": [
@@ -194,20 +206,20 @@
       "last": null
     },
     {
-      "count": 96,
+      "count": 156,
       "first": {
-        "mgdl": 93,
+        "mgdl": 156,
         "color": "#1e88e5",
-        "mills": 1774799351906,
+        "mills": 1778284801472,
         "noFade": true,
         "forecastType": "IOB"
       },
       "last": {
-        "mgdl": 401,
-        "color": "#00d2d2",
-        "mills": 1774813453017,
+        "mgdl": 39,
+        "color": "#c9bd60",
+        "mills": 1778293208138,
         "noFade": true,
-        "forecastType": "Zero-Temp"
+        "forecastType": "UAM"
       }
     }
   ],

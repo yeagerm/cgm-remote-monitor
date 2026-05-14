@@ -89,7 +89,7 @@ describe('client-core: careportal / normalize-treatment (captured Loop fixtures)
     CAPTURED.length.should.be.greaterThan(0);
   });
 
-  it('normalization throws for no captured record', function () {
+  it('normalize() does not throw for any captured record', function () {
     CAPTURED.forEach(function (t, i) {
       (function () { normalize(toAdapterRaw(t), { units: 'mg/dl', inputMatrix: INPUT_MATRIX }); })
         .should.not.throw('record[' + i + ']');

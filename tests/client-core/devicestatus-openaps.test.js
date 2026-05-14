@@ -240,14 +240,49 @@ describe('client-core: devicestatus / openaps (selectOpenAPSState)', function ()
   });
 
   describe('captured Trio (oref1) fixtures', function () {
-    it('selects lastSuggested from the oref1 suggested block (which carries a timestamp)', function () {
+    var result;
+
+    before(function () {
       var clone = JSON.parse(JSON.stringify(TRIO));
       var now = pickNow(clone);
       var recent = moment(now).subtract(15, 'minutes');
-      var r = selectOpenAPSState(clone, recent);
-      (r.lastSuggested !== null).should.be.true();
-      r.lastSuggested.should.have.property('timestamp');
-      moment.isMoment(r.lastSuggested.moment).should.be.true();
+      result = selectOpenAPSState(clone, recent);
+    });
+
+    it('selects lastSuggested from the oref1 suggested block (which carries a timestamp)', function () {
+      (result.lastSuggested !== null).should.be.true();
+      result.lastSuggested.should.have.property('timestamp');
+      moment.isMoment(result.lastSuggested.moment).should.be.true();
+    });
+
+    it('selects lastEnacted from records carrying enacted.timestamp + received', function () {
+      // Trio captures regenerated from a Trio-only Nightscout source
+      // (ns-data/patients/b/verification) carry enacted.received=true
+      // on every record, so this exercises the enacted-selection and
+      // notEnacted-vs-enacted ordering branches that the AAPS captured
+      // payload cannot.
+      (result.lastEnacted !== null).should.be.true();
+      result.lastEnacted.should.have.property('timestamp');
+      moment.isMoment(result.lastEnacted.moment).should.be.true();
+    });
+
+    it('captures predBGs (per-curve object) from the oref1 enacted/suggested block', function () {
+      // oref1 emits predBGs as { IOB, COB, ZT, UAM } objects (not bare
+      // arrays). selectOpenAPSState should preserve that shape on
+      // lastPredBGs and stamp a moment.
+      (result.lastPredBGs !== null).should.be.true();
+      moment.isMoment(result.lastPredBGs.moment).should.be.true();
+      // At least one of the canonical oref1 curves is present.
+      var keys = Object.keys(result.lastPredBGs);
+      keys.some(function (k) { return ['IOB', 'COB', 'ZT', 'UAM'].indexOf(k) !== -1; })
+        .should.be.true();
+    });
+
+    it('top-level status reaches "enacted" when latest enacted is within recent', function () {
+      // The captured slice is anchored so the latest record sits at
+      // pickNow-60s; recent = pickNow-15min. Enacted should win over
+      // suggested in the top-level status code.
+      result.status.code.should.equal('enacted');
     });
   });
 
